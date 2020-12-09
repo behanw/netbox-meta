@@ -1,0 +1,2343 @@
+manufacturer: APC
+model: APC PDU AP9562
+slug: apc-pdu-ap9562
+part_number: AP9562
+u_height: 1
+is_full_depth: false
+subdevice_role: ''
+comments: ''
+power-ports:
+- name: pwr1
+  type: nema-5-15p
+  maximum_draw: 1800
+  allocated_draw: null
+power-outlets:
+- name: outlet1
+  type: nema-l5-15r
+  power_port: pwr1
+  feed_leg: A
+- name: outlet2
+  type: nema-l5-15r
+  power_port: pwr1
+  feed_leg: A
+- name: outlet3
+  type: nema-l5-15r
+  power_port: pwr1
+  feed_leg: A
+- name: outlet4
+  type: nema-l5-15r
+  power_port: pwr1
+  feed_leg: A
+- name: outlet5
+  type: nema-l5-15r
+  power_port: pwr1
+  feed_leg: A
+- name: outlet6
+  type: nema-l5-15r
+  power_port: pwr1
+  feed_leg: A
+- name: outlet7
+  type: nema-l5-15r
+  power_port: pwr1
+  feed_leg: A
+- name: outlet8
+  type: nema-l5-15r
+  power_port: pwr1
+  feed_leg: A
+- name: outlet9
+  type: nema-l5-15r
+  power_port: pwr1
+  feed_leg: A
+- name: outlet10
+  type: nema-l5-15r
+  power_port: pwr1
+  feed_leg: A
+---
+manufacturer: APC
+model: Back-UPS NS 1050
+slug: back-ups-ns-1050
+part_number: BN1050
+u_height: 2
+is_full_depth: false
+subdevice_role: ''
+comments: ''
+console-ports:
+- name: ups1
+  type: rj-45
+power-ports:
+- name: pwr1
+  type: nema-5-15p
+  maximum_draw: 1050
+  allocated_draw: 10
+power-outlets:
+- name: outlet1
+  type: nema-5-15r
+  power_port: pwr1
+  feed_leg: A
+- name: outlet2
+  type: nema-5-15r
+  power_port: pwr1
+  feed_leg: A
+- name: outlet3
+  type: nema-5-15r
+  power_port: pwr1
+  feed_leg: B
+- name: outlet4
+  type: nema-5-15r
+  power_port: pwr1
+  feed_leg: B
+- name: outlet5
+  type: nema-5-15r
+  power_port: pwr1
+  feed_leg: B
+- name: outlet6
+  type: nema-5-15r
+  power_port: pwr1
+  feed_leg: B
+- name: outlet7
+  type: nema-5-15r
+  power_port: pwr1
+  feed_leg: B
+- name: outlet8
+  type: nema-5-15r
+  power_port: pwr1
+  feed_leg: B
+---
+manufacturer: APC
+model: PDU AP7911a
+slug: pdu-ap7911a
+part_number: AP7911a
+u_height: 2
+is_full_depth: false
+subdevice_role: ''
+comments: https://www.apc.com/shop/us/en/products/Rack-PDU-Switched-2U-30A-208V-16-C13/P-AP7911A
+console-ports:
+- name: console1
+  type: rj-12
+power-ports:
+- name: pwr1
+  type: nema-5-20p
+  maximum_draw: 4992
+  allocated_draw: 30
+power-outlets:
+- name: outlet1
+  type: iec-60320-c13
+  power_port: null
+  feed_leg: A
+- name: outlet2
+  type: iec-60320-c13
+  power_port: null
+  feed_leg: A
+- name: outlet3
+  type: iec-60320-c13
+  power_port: null
+  feed_leg: A
+- name: outlet4
+  type: iec-60320-c13
+  power_port: null
+  feed_leg: A
+- name: outlet5
+  type: iec-60320-c13
+  power_port: null
+  feed_leg: A
+- name: outlet6
+  type: iec-60320-c13
+  power_port: null
+  feed_leg: A
+- name: outlet7
+  type: iec-60320-c13
+  power_port: null
+  feed_leg: A
+- name: outlet8
+  type: iec-60320-c13
+  power_port: null
+  feed_leg: A
+- name: outlet9
+  type: iec-60320-c13
+  power_port: null
+  feed_leg: B
+- name: outlet10
+  type: iec-60320-c13
+  power_port: null
+  feed_leg: B
+- name: outlet11
+  type: iec-60320-c13
+  power_port: null
+  feed_leg: B
+- name: outlet12
+  type: iec-60320-c13
+  power_port: null
+  feed_leg: B
+- name: outlet13
+  type: iec-60320-c13
+  power_port: null
+  feed_leg: B
+- name: outlet14
+  type: iec-60320-c13
+  power_port: null
+  feed_leg: B
+- name: outlet15
+  type: iec-60320-c13
+  power_port: null
+  feed_leg: B
+- name: outlet16
+  type: iec-60320-c13
+  power_port: null
+  feed_leg: B
+interfaces:
+- name: eth0
+  type: 100base-tx
+  mgmt_only: true
+---
+manufacturer: APC
+model: Smart-UPS 1400
+slug: smart-ups-1400
+part_number: SU1400NET
+u_height: 0
+is_full_depth: false
+subdevice_role: child
+comments: ''
+console-ports:
+- name: ups1
+  type: de-9
+power-ports:
+- name: pwr1
+  type: nema-5-15p
+  maximum_draw: 1400
+  allocated_draw: 10
+power-outlets:
+- name: outlet1
+  type: nema-5-15r
+  power_port: pwr1
+  feed_leg: A
+- name: outlet2
+  type: nema-5-15r
+  power_port: pwr1
+  feed_leg: A
+- name: outlet3
+  type: nema-5-15r
+  power_port: pwr1
+  feed_leg: A
+- name: outlet4
+  type: nema-5-15r
+  power_port: pwr1
+  feed_leg: A
+- name: outlet5
+  type: nema-5-15r
+  power_port: pwr1
+  feed_leg: A
+- name: outlet6
+  type: nema-5-15r
+  power_port: pwr1
+  feed_leg: A
+---
+manufacturer: APC
+model: Smart-UPS 3000VA
+slug: smart-ups-3000va
+part_number: SMX3000RMLV2UNC
+u_height: 2
+is_full_depth: true
+subdevice_role: ''
+comments: Holds RPC117 Battery pack
+console-ports:
+- name: console
+  type: rj-45
+power-ports:
+- name: pwr1
+  type: nema-5-30p
+  maximum_draw: 2700
+  allocated_draw: 2000
+power-outlets:
+- name: DCpwr
+  type: nema-6-50r
+  power_port: pwr1
+  feed_leg: ''
+- name: outlet15a
+  type: nema-5-15r
+  power_port: pwr1
+  feed_leg: A
+- name: outlet15b
+  type: nema-5-15r
+  power_port: pwr1
+  feed_leg: A
+- name: outlet15c
+  type: nema-5-15r
+  power_port: pwr1
+  feed_leg: A
+- name: outlet20a
+  type: nema-5-20r
+  power_port: pwr1
+  feed_leg: B
+- name: outlet20b
+  type: nema-5-20r
+  power_port: pwr1
+  feed_leg: B
+- name: outlet20c
+  type: nema-5-20r
+  power_port: pwr1
+  feed_leg: B
+- name: outlet30
+  type: nema-5-30r
+  power_port: pwr1
+  feed_leg: C
+interfaces:
+- name: eth0
+  type: 100base-tx
+  mgmt_only: true
+---
+manufacturer: APC
+model: Smart-UPS X 2U Battery
+slug: smart-ups-x-2u-battery
+part_number: SMX120RMBP2U
+u_height: 2
+is_full_depth: true
+subdevice_role: ''
+comments: Holds 2 RPC118 Battery packs
+power-ports:
+- name: DCpwr
+  type: nema-6-50p
+  maximum_draw: 2700
+  allocated_draw: 2000
+power-outlets:
+- name: DCoutlet
+  type: nema-6-50r
+  power_port: DCpwr
+  feed_leg: A
+---
+manufacturer: APC
+model: UPS Shelf x2
+slug: ups-shelf-x2
+part_number: ''
+u_height: 5
+is_full_depth: false
+subdevice_role: parent
+comments: Holds 2 APC SU1400 UPSes
+device-bays:
+- name: ups0
+- name: ups1
+---
+manufacturer: Apple
+model: MacBook Pro
+slug: macbook-pro
+part_number: ''
+u_height: 0
+is_full_depth: false
+subdevice_role: ''
+comments: ''
+---
+manufacturer: Apple
+model: iMac
+slug: imac
+part_number: ''
+u_height: 0
+is_full_depth: false
+subdevice_role: ''
+comments: ''
+---
+manufacturer: Apple
+model: iMac Pro
+slug: imac-pro
+part_number: ''
+u_height: 0
+is_full_depth: false
+subdevice_role: ''
+comments: ''
+power-ports:
+- name: pwr1
+  type: nema-5-15p
+  maximum_draw: 500
+  allocated_draw: 200
+interfaces:
+- name: en0
+  type: 10gbase-t
+  mgmt_only: false
+- name: en1
+  type: ieee802.11ac
+  mgmt_only: false
+---
+manufacturer: Apple
+model: iPad
+slug: ipad
+part_number: ''
+u_height: 0
+is_full_depth: false
+subdevice_role: ''
+comments: ''
+---
+manufacturer: Apple
+model: iPhone
+slug: iphone
+part_number: ''
+u_height: 0
+is_full_depth: false
+subdevice_role: ''
+comments: ''
+---
+manufacturer: Arista
+model: Arista 7148s
+slug: arista-7148s
+part_number: AR7148s
+u_height: 1
+is_full_depth: false
+subdevice_role: ''
+comments: http://itways.pl/files/uploads/Arista-7148S-7148SX-Datasheet.pdf
+console-ports:
+- name: console1
+  type: rj-45
+power-ports:
+- name: pwr1
+  type: iec-60320-c14
+  maximum_draw: 650
+  allocated_draw: 500
+- name: pwr2
+  type: iec-60320-c14
+  maximum_draw: 650
+  allocated_draw: 500
+interfaces:
+- name: Et1
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et2
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et3
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et4
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et5
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et6
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et7
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et8
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et9
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et10
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et11
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et12
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et13
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et14
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et15
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et16
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et17
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et18
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et19
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et20
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et21
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et22
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et23
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et24
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et25
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et26
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et27
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et28
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et29
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et30
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et31
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et32
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et33
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et34
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et35
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et36
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et37
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et38
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et39
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et40
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et41
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et42
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et43
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et44
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et45
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et46
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et47
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Et48
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Ma1
+  type: 1000base-t
+  mgmt_only: true
+- name: Ma2
+  type: 1000base-t
+  mgmt_only: true
+---
+manufacturer: Asus
+model: 1U server
+slug: 1u-server
+part_number: ''
+u_height: 1
+is_full_depth: true
+subdevice_role: ''
+comments: ''
+console-ports:
+- name: console1
+  type: ''
+power-ports:
+- name: pwr1
+  type: ''
+  maximum_draw: null
+  allocated_draw: null
+interfaces:
+- name: eth0
+  type: 1000base-t
+  mgmt_only: false
+- name: eth1
+  type: 1000base-t
+  mgmt_only: false
+---
+manufacturer: Asus
+model: RS720-E7-RS12-E
+slug: rs720-e7-rs12-e
+part_number: RS720-E7-RS12-E
+u_height: 2
+is_full_depth: true
+subdevice_role: ''
+comments: https://www.asus.com/ca-en/Commercial-Servers-Workstations/RS720E7RS12E/
+power-ports:
+- name: pwr1
+  type: iec-60320-c14
+  maximum_draw: 500
+  allocated_draw: 200
+- name: pwr2
+  type: iec-60320-c14
+  maximum_draw: 500
+  allocated_draw: 200
+interfaces:
+- name: enp7s0f0
+  type: 1000base-t
+  mgmt_only: false
+- name: enp7s0f1
+  type: 1000base-t
+  mgmt_only: false
+- name: enp7s0f2
+  type: 1000base-t
+  mgmt_only: false
+- name: enp7s0f3
+  type: 1000base-t
+  mgmt_only: false
+- name: ipmi
+  type: 1000base-t
+  mgmt_only: true
+---
+manufacturer: Brother
+model: DCP-7065DN
+slug: dcp-7065dn
+part_number: DCP-7065DN
+u_height: 1
+is_full_depth: false
+subdevice_role: ''
+comments: https://support.brother.com/g/b/producttop.aspx?c=ca&lang=en&prod=dcp7065dn_all
+power-ports:
+- name: pwr1
+  type: iec-60320-c14
+  maximum_draw: 500
+  allocated_draw: 445
+interfaces:
+- name: eth0
+  type: 100base-tx
+  mgmt_only: false
+---
+manufacturer: Brother
+model: HL-L5200DW series
+slug: hl-l5200dw-series
+part_number: HL-L5200DW
+u_height: 1
+is_full_depth: true
+subdevice_role: ''
+comments: https://support.brother.com/g/b/producttop.aspx?c=ca&lang=en&prod=hll5200dw_us_eu_as
+power-ports:
+- name: pwr1
+  type: iec-60320-c14
+  maximum_draw: 750
+  allocated_draw: 640
+interfaces:
+- name: eth0
+  type: 100base-tx
+  mgmt_only: false
+---
+manufacturer: Cisco
+model: SPA-2102
+slug: spa-2102
+part_number: SPA-2102
+u_height: 0
+is_full_depth: false
+subdevice_role: ''
+comments: ''
+power-ports:
+- name: pwr1
+  type: ''
+  maximum_draw: 10
+  allocated_draw: 5
+interfaces:
+- name: eth0
+  type: 100base-tx
+  mgmt_only: false
+- name: wan0
+  type: 100base-tx
+  mgmt_only: false
+rear-ports:
+- name: Phone 1
+  type: 8p8c
+  positions: 1
+- name: Phone 2
+  type: 8p8c
+  positions: 1
+---
+manufacturer: D-link
+model: D-Link Travel Router 505
+slug: d-link
+part_number: DIR-505
+u_height: 0
+is_full_depth: false
+subdevice_role: ''
+comments: https://support.dlink.ca/ProductInfo.aspx?m=DIR-505
+power-ports:
+- name: pwr1
+  type: nema-5-15p
+  maximum_draw: 2
+  allocated_draw: 1
+interfaces:
+- name: eth0
+  type: 100base-tx
+  mgmt_only: false
+---
+manufacturer: D-link
+model: DIR-815 Wireless Router
+slug: dir-815
+part_number: DIR-815
+u_height: 0
+is_full_depth: false
+subdevice_role: ''
+comments: http://support.dlink.ca/ProductInfo.aspx?m=DIR-815
+power-ports:
+- name: pwr5v
+  type: ''
+  maximum_draw: null
+  allocated_draw: null
+interfaces:
+- name: eth0
+  type: 100base-tx
+  mgmt_only: false
+- name: eth1
+  type: 100base-tx
+  mgmt_only: false
+- name: eth2
+  type: 100base-tx
+  mgmt_only: false
+- name: eth3
+  type: 100base-tx
+  mgmt_only: false
+- name: wan1
+  type: 100base-tx
+  mgmt_only: false
+---
+manufacturer: D-link
+model: DNS-343 NAS
+slug: dns-343
+part_number: DNS-343
+u_height: 0
+is_full_depth: false
+subdevice_role: child
+comments: http://support.dlink.ca/ProductInfo.aspx?m=DNS-343
+power-ports:
+- name: pwr19v
+  type: ''
+  maximum_draw: 37
+  allocated_draw: 40
+interfaces:
+- name: eth0
+  type: 1000base-t
+  mgmt_only: false
+---
+manufacturer: D-link
+model: NAS Shelf x2
+slug: nas-shelf-x2
+part_number: ''
+u_height: 5
+is_full_depth: false
+subdevice_role: parent
+comments: ''
+device-bays:
+- name: Bay0
+- name: Bay1
+---
+manufacturer: Dell
+model: Dell PowerConnect 7048 48-Port Gigabit Switch
+slug: dell-powerconnect-7048-48-port-gigabit-switch
+part_number: Dell-7048-GbE
+u_height: 1
+is_full_depth: false
+subdevice_role: ''
+comments: https://www1.ca.dell.com/ca/en/niso/networking/switch-powerconnect-7048/pd.aspx?refid=switch-powerconnect-7048&s=niso&cs=caniso1
+console-ports:
+- name: console1
+  type: rj-45
+power-ports:
+- name: pwr1
+  type: iec-60320-c14
+  maximum_draw: 180
+  allocated_draw: 100
+interfaces:
+- name: Gi1/0/1
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/2
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/3
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/4
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/5
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/6
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/7
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/8
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/9
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/10
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/11
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/12
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/13
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/14
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/15
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/16
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/17
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/18
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/19
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/20
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/21
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/22
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/23
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/24
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/25
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/26
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/27
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/28
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/29
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/30
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/31
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/32
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/33
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/34
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/35
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/36
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/37
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/38
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/39
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/40
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/41
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/42
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/43
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/44
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/45
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/46
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/47
+  type: 1000base-t
+  mgmt_only: false
+- name: Gi1/0/48
+  type: 1000base-t
+  mgmt_only: false
+- name: Te1/1/1
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Te1/1/2
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Te1/2/1
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: Te1/2/2
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: oob1
+  type: 1000base-t
+  mgmt_only: true
+---
+manufacturer: Digi International
+model: Digi CM48
+slug: cm48
+part_number: '70001949'
+u_height: 1
+is_full_depth: false
+subdevice_role: ''
+comments: https://www.digi.com/products/models/70001949
+console-ports:
+- name: console1
+  type: rj-45
+console-server-ports:
+- name: serial1
+  type: rj-45
+- name: serial2
+  type: rj-45
+- name: serial3
+  type: rj-45
+- name: serial4
+  type: rj-45
+- name: serial5
+  type: rj-45
+- name: serial6
+  type: rj-45
+- name: serial7
+  type: rj-45
+- name: serial8
+  type: rj-45
+- name: serial9
+  type: rj-45
+- name: serial10
+  type: rj-45
+- name: serial11
+  type: rj-45
+- name: serial12
+  type: rj-45
+- name: serial13
+  type: rj-45
+- name: serial14
+  type: rj-45
+- name: serial15
+  type: rj-45
+- name: serial16
+  type: rj-45
+- name: serial17
+  type: rj-45
+- name: serial18
+  type: rj-45
+- name: serial19
+  type: rj-45
+- name: serial20
+  type: rj-45
+- name: serial21
+  type: rj-45
+- name: serial22
+  type: rj-45
+- name: serial23
+  type: rj-45
+- name: serial24
+  type: rj-45
+- name: serial25
+  type: rj-45
+- name: serial26
+  type: rj-45
+- name: serial27
+  type: rj-45
+- name: serial28
+  type: rj-45
+- name: serial29
+  type: rj-45
+- name: serial30
+  type: rj-45
+- name: serial31
+  type: rj-45
+- name: serial32
+  type: rj-45
+- name: serial33
+  type: rj-45
+- name: serial34
+  type: rj-45
+- name: serial35
+  type: rj-45
+- name: serial36
+  type: rj-45
+- name: serial37
+  type: rj-45
+- name: serial38
+  type: rj-45
+- name: serial39
+  type: rj-45
+- name: serial40
+  type: rj-45
+- name: serial41
+  type: rj-45
+- name: serial42
+  type: rj-45
+- name: serial43
+  type: rj-45
+- name: serial44
+  type: rj-45
+- name: serial45
+  type: rj-45
+- name: serial46
+  type: rj-45
+- name: serial47
+  type: rj-45
+- name: serial48
+  type: rj-45
+power-ports:
+- name: pwr1
+  type: iec-60320-c14
+  maximum_draw: 50
+  allocated_draw: 40
+interfaces:
+- name: eth0
+  type: 100base-tx
+  mgmt_only: true
+---
+manufacturer: Digital Loggers
+model: Web Power Switch Pro
+slug: web-power-switch-pro
+part_number: DLI-WPW-PRO
+u_height: 1
+is_full_depth: false
+subdevice_role: ''
+comments: https://dlidirect.com/products/new-pro-switch
+power-ports:
+- name: pwr1
+  type: nema-5-15p
+  maximum_draw: 1500
+  allocated_draw: 10
+power-outlets:
+- name: ns1
+  type: nema-5-15r
+  power_port: pwr1
+  feed_leg: A
+- name: ns2
+  type: nema-5-15r
+  power_port: pwr1
+  feed_leg: A
+- name: sp1
+  type: nema-5-15r
+  power_port: pwr1
+  feed_leg: B
+- name: sp2
+  type: nema-5-15r
+  power_port: pwr1
+  feed_leg: B
+- name: sp3
+  type: nema-5-15r
+  power_port: pwr1
+  feed_leg: B
+- name: sp4
+  type: nema-5-15r
+  power_port: pwr1
+  feed_leg: B
+- name: sp5
+  type: nema-5-15r
+  power_port: pwr1
+  feed_leg: B
+- name: sp6
+  type: nema-5-15r
+  power_port: pwr1
+  feed_leg: B
+- name: sp7
+  type: nema-5-15r
+  power_port: pwr1
+  feed_leg: B
+- name: sp8
+  type: nema-5-15r
+  power_port: pwr1
+  feed_leg: B
+interfaces:
+- name: eth0
+  type: 100base-tx
+  mgmt_only: true
+---
+manufacturer: HP
+model: Color LaserJet CP2025dn
+slug: color-laserjet-cp2025dn
+part_number: CP2025dn
+u_height: 1
+is_full_depth: false
+subdevice_role: ''
+comments: https://support.hp.com/us-en/product/HP-Color-LaserJet-CP2025-Printer-series/3673580/model/3673587
+power-ports:
+- name: pwr1
+  type: iec-60320-c14
+  maximum_draw: 500
+  allocated_draw: 445
+interfaces:
+- name: eth0
+  type: 100base-tx
+  mgmt_only: false
+---
+manufacturer: Leviton
+model: 1-Gang 2-port Wall Plate
+slug: 1-gang-2-port-wall-plate
+part_number: 41080-2xx
+u_height: 0
+is_full_depth: false
+subdevice_role: ''
+comments: ''
+front-ports:
+- name: front1
+  type: 8p8c
+  rear_port: rear1
+  rear_port_position: 1
+- name: front2
+  type: 8p8c
+  rear_port: rear2
+  rear_port_position: 1
+rear-ports:
+- name: rear1
+  type: 8p8c
+  positions: 1
+- name: rear2
+  type: 8p8c
+  positions: 1
+---
+manufacturer: Leviton
+model: Category 5e Voice & Data Expansion Board
+slug: category-5e-voice-data-expansion-board
+part_number: 47603-C5
+u_height: 1
+is_full_depth: false
+subdevice_role: ''
+comments: https://www.leviton.com/en/products/47603-c5
+front-ports:
+- name: eth1
+  type: 8p8c
+  rear_port: port1
+  rear_port_position: 1
+- name: eth2
+  type: 8p8c
+  rear_port: port2
+  rear_port_position: 1
+- name: eth3
+  type: 8p8c
+  rear_port: port3
+  rear_port_position: 1
+- name: eth4
+  type: 8p8c
+  rear_port: port4
+  rear_port_position: 1
+- name: eth5
+  type: 8p8c
+  rear_port: port5
+  rear_port_position: 1
+- name: eth6
+  type: 8p8c
+  rear_port: port6
+  rear_port_position: 1
+rear-ports:
+- name: port1
+  type: 110-punch
+  positions: 1
+- name: port2
+  type: 110-punch
+  positions: 1
+- name: port3
+  type: 110-punch
+  positions: 1
+- name: port4
+  type: 110-punch
+  positions: 1
+- name: port5
+  type: 110-punch
+  positions: 1
+- name: port6
+  type: 110-punch
+  positions: 1
+---
+manufacturer: Supermicro
+model: SuperMicro X11DPT-PS
+slug: supermicro-x11dpt-ps
+part_number: X11DPT-PS
+u_height: 0
+is_full_depth: false
+subdevice_role: child
+comments: https://www.supermicro.com/products/motherboard/Xeon/C620/X11DPT-PS.cfm
+console-ports:
+- name: console1
+  type: ''
+interfaces:
+- name: SFP+1
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: SFP+2
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: eth0
+  type: 1000base-t
+  mgmt_only: false
+- name: eth1
+  type: 1000base-t
+  mgmt_only: false
+- name: eth2
+  type: 1000base-t
+  mgmt_only: false
+- name: eth3
+  type: 1000base-t
+  mgmt_only: false
+- name: ipmi
+  type: 1000base-t
+  mgmt_only: true
+---
+manufacturer: Supermicro
+model: SuperMicro X8DTT-HF+
+slug: supermicro-x8dtt-hf
+part_number: X8DTT-HF+
+u_height: 0
+is_full_depth: false
+subdevice_role: child
+comments: https://www.supermicro.com/products/motherboard/QPI/5500/X8DTT-H_.cfm?INF=
+console-ports:
+- name: console1
+  type: ''
+interfaces:
+- name: SFP+1
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: SFP+2
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: eth0
+  type: 1000base-t
+  mgmt_only: false
+- name: eth1
+  type: 1000base-t
+  mgmt_only: false
+- name: ipmi
+  type: 100base-tx
+  mgmt_only: true
+---
+manufacturer: Supermicro
+model: SuperServer Twin 1029TP-DTR
+slug: superserver-twin-1029tp-dtr
+part_number: SYS-1029TP-DTR
+u_height: 1
+is_full_depth: true
+subdevice_role: parent
+comments: https://www.supermicro.com/products/system/1U/1029/SYS-1029TP-DTR.cfm
+power-ports:
+- name: pwr1
+  type: iec-60320-c14
+  maximum_draw: 1000
+  allocated_draw: 100
+- name: pwr2
+  type: iec-60320-c14
+  maximum_draw: 1000
+  allocated_draw: 100
+device-bays:
+- name: node-a
+- name: node-b
+---
+manufacturer: Supermicro
+model: SuperServer Twin 6026TT-HTRF
+slug: superserver-twin-6026tt-htrf
+part_number: SYS-6026TT-HTRF
+u_height: 2
+is_full_depth: true
+subdevice_role: parent
+comments: https://www.supermicro.com/products/system/2U/6026/SYS-6026TT-HIBQRF.cfm?INF=
+power-ports:
+- name: pwr1
+  type: iec-60320-c14
+  maximum_draw: 1000
+  allocated_draw: 500
+- name: pwr2
+  type: iec-60320-c14
+  maximum_draw: 1000
+  allocated_draw: 500
+device-bays:
+- name: node-a
+- name: node-b
+- name: node-c
+- name: node-d
+---
+manufacturer: Supermicro
+model: SuperServer X8DTU-F
+slug: superserver-x8dtu-f
+part_number: X8DTU-F
+u_height: 1
+is_full_depth: true
+subdevice_role: ''
+comments: https://www.supermicro.com/products/motherboard/QPI/5500/X8DTU-F.cfm
+console-ports:
+- name: console1
+  type: ''
+power-ports:
+- name: pwr1
+  type: iec-60320-c14
+  maximum_draw: 500
+  allocated_draw: 100
+- name: pwr2
+  type: iec-60320-c14
+  maximum_draw: 500
+  allocated_draw: 100
+interfaces:
+- name: SFP+1
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: SFP+2
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: eth0
+  type: 1000base-t
+  mgmt_only: false
+- name: eth1
+  type: 1000base-t
+  mgmt_only: false
+- name: ipmi
+  type: 100base-tx
+  mgmt_only: true
+---
+manufacturer: Supermicro
+model: SuperServer X9DRi-LN4F+
+slug: superserver-x9dri-ln4f
+part_number: X9DRi-LN4F+
+u_height: 4
+is_full_depth: true
+subdevice_role: ''
+comments: https://www.supermicro.com/products/motherboard/Xeon/C600/X9DRi-LN4F_.cfm
+console-ports:
+- name: console1
+  type: ''
+power-ports:
+- name: pwr1
+  type: iec-60320-c14
+  maximum_draw: 1400
+  allocated_draw: 750
+- name: pwr2
+  type: iec-60320-c14
+  maximum_draw: 1400
+  allocated_draw: 750
+interfaces:
+- name: SFP+1
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: SFP+2
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: eth0
+  type: 1000base-t
+  mgmt_only: false
+- name: eth1
+  type: 1000base-t
+  mgmt_only: false
+- name: eth2
+  type: 1000base-t
+  mgmt_only: false
+- name: eth3
+  type: 1000base-t
+  mgmt_only: false
+- name: ipmi
+  type: 100base-tx
+  mgmt_only: true
+---
+manufacturer: TRENDnet
+model: 24-port Keystone
+slug: 24-port-keystone
+part_number: TC-KP24S
+u_height: 1
+is_full_depth: false
+subdevice_role: ''
+comments: ''
+front-ports:
+- name: front1
+  type: 8p8c
+  rear_port: rear1
+  rear_port_position: 1
+- name: front2
+  type: 8p8c
+  rear_port: rear2
+  rear_port_position: 1
+- name: front3
+  type: 8p8c
+  rear_port: rear3
+  rear_port_position: 1
+- name: front4
+  type: 8p8c
+  rear_port: rear4
+  rear_port_position: 1
+- name: front5
+  type: 8p8c
+  rear_port: rear5
+  rear_port_position: 1
+- name: front6
+  type: 8p8c
+  rear_port: rear6
+  rear_port_position: 1
+- name: front7
+  type: 8p8c
+  rear_port: rear7
+  rear_port_position: 1
+- name: front8
+  type: 8p8c
+  rear_port: rear8
+  rear_port_position: 1
+- name: front9
+  type: 8p8c
+  rear_port: rear9
+  rear_port_position: 1
+- name: front10
+  type: 8p8c
+  rear_port: rear10
+  rear_port_position: 1
+- name: front11
+  type: 8p8c
+  rear_port: rear11
+  rear_port_position: 1
+- name: front12
+  type: 8p8c
+  rear_port: rear12
+  rear_port_position: 1
+- name: front13
+  type: 8p8c
+  rear_port: rear13
+  rear_port_position: 1
+- name: front14
+  type: 8p8c
+  rear_port: rear14
+  rear_port_position: 1
+- name: front15
+  type: 8p8c
+  rear_port: rear15
+  rear_port_position: 1
+- name: front16
+  type: 8p8c
+  rear_port: rear16
+  rear_port_position: 1
+- name: front17
+  type: 8p8c
+  rear_port: rear17
+  rear_port_position: 1
+- name: front18
+  type: 8p8c
+  rear_port: rear18
+  rear_port_position: 1
+- name: front19
+  type: 8p8c
+  rear_port: rear19
+  rear_port_position: 1
+- name: front20
+  type: 8p8c
+  rear_port: rear20
+  rear_port_position: 1
+- name: front21
+  type: 8p8c
+  rear_port: rear21
+  rear_port_position: 1
+- name: front22
+  type: 8p8c
+  rear_port: rear22
+  rear_port_position: 1
+- name: front23
+  type: 8p8c
+  rear_port: rear23
+  rear_port_position: 1
+- name: front24
+  type: 8p8c
+  rear_port: rear24
+  rear_port_position: 1
+rear-ports:
+- name: rear1
+  type: 8p8c
+  positions: 1
+- name: rear2
+  type: 8p8c
+  positions: 1
+- name: rear3
+  type: 8p8c
+  positions: 1
+- name: rear4
+  type: 8p8c
+  positions: 1
+- name: rear5
+  type: 8p8c
+  positions: 1
+- name: rear6
+  type: 8p8c
+  positions: 1
+- name: rear7
+  type: 8p8c
+  positions: 1
+- name: rear8
+  type: 8p8c
+  positions: 1
+- name: rear9
+  type: 8p8c
+  positions: 1
+- name: rear10
+  type: 8p8c
+  positions: 1
+- name: rear11
+  type: 8p8c
+  positions: 1
+- name: rear12
+  type: 8p8c
+  positions: 1
+- name: rear13
+  type: 8p8c
+  positions: 1
+- name: rear14
+  type: 8p8c
+  positions: 1
+- name: rear15
+  type: 8p8c
+  positions: 1
+- name: rear16
+  type: 8p8c
+  positions: 1
+- name: rear17
+  type: 8p8c
+  positions: 1
+- name: rear18
+  type: 8p8c
+  positions: 1
+- name: rear19
+  type: 8p8c
+  positions: 1
+- name: rear20
+  type: 8p8c
+  positions: 1
+- name: rear21
+  type: 8p8c
+  positions: 1
+- name: rear22
+  type: 8p8c
+  positions: 1
+- name: rear23
+  type: 8p8c
+  positions: 1
+- name: rear24
+  type: 8p8c
+  positions: 1
+---
+manufacturer: TRENDnet
+model: 24-port RJ45 patch panel
+slug: 24-port-rj45-patch-panel
+part_number: ''
+u_height: 1
+is_full_depth: false
+subdevice_role: ''
+comments: ''
+front-ports:
+- name: front1
+  type: 8p8c
+  rear_port: rear1
+  rear_port_position: 1
+- name: front2
+  type: 8p8c
+  rear_port: rear2
+  rear_port_position: 1
+- name: front3
+  type: 8p8c
+  rear_port: rear3
+  rear_port_position: 1
+- name: front4
+  type: 8p8c
+  rear_port: rear4
+  rear_port_position: 1
+- name: front5
+  type: 8p8c
+  rear_port: rear5
+  rear_port_position: 1
+- name: front6
+  type: 8p8c
+  rear_port: rear6
+  rear_port_position: 1
+- name: front7
+  type: 8p8c
+  rear_port: rear7
+  rear_port_position: 1
+- name: front8
+  type: 8p8c
+  rear_port: rear8
+  rear_port_position: 1
+- name: front9
+  type: 8p8c
+  rear_port: rear9
+  rear_port_position: 1
+- name: front10
+  type: 8p8c
+  rear_port: rear10
+  rear_port_position: 1
+- name: front11
+  type: 8p8c
+  rear_port: rear11
+  rear_port_position: 1
+- name: front12
+  type: 8p8c
+  rear_port: rear12
+  rear_port_position: 1
+- name: front13
+  type: 8p8c
+  rear_port: rear13
+  rear_port_position: 1
+- name: front14
+  type: 8p8c
+  rear_port: rear14
+  rear_port_position: 1
+- name: front15
+  type: 8p8c
+  rear_port: rear15
+  rear_port_position: 1
+- name: front16
+  type: 8p8c
+  rear_port: rear16
+  rear_port_position: 1
+- name: front17
+  type: 8p8c
+  rear_port: rear17
+  rear_port_position: 1
+- name: front18
+  type: 8p8c
+  rear_port: rear18
+  rear_port_position: 1
+- name: front19
+  type: 8p8c
+  rear_port: rear19
+  rear_port_position: 1
+- name: front20
+  type: 8p8c
+  rear_port: rear20
+  rear_port_position: 1
+- name: front21
+  type: 8p8c
+  rear_port: rear21
+  rear_port_position: 1
+- name: front22
+  type: 8p8c
+  rear_port: rear22
+  rear_port_position: 1
+- name: front23
+  type: 8p8c
+  rear_port: rear23
+  rear_port_position: 1
+- name: front24
+  type: 8p8c
+  rear_port: rear24
+  rear_port_position: 1
+rear-ports:
+- name: rear1
+  type: 110-punch
+  positions: 1
+- name: rear2
+  type: 110-punch
+  positions: 1
+- name: rear3
+  type: 110-punch
+  positions: 1
+- name: rear4
+  type: 110-punch
+  positions: 1
+- name: rear5
+  type: 110-punch
+  positions: 1
+- name: rear6
+  type: 110-punch
+  positions: 1
+- name: rear7
+  type: 110-punch
+  positions: 1
+- name: rear8
+  type: 110-punch
+  positions: 1
+- name: rear9
+  type: 110-punch
+  positions: 1
+- name: rear10
+  type: 110-punch
+  positions: 1
+- name: rear11
+  type: 110-punch
+  positions: 1
+- name: rear12
+  type: 110-punch
+  positions: 1
+- name: rear13
+  type: 110-punch
+  positions: 1
+- name: rear14
+  type: 110-punch
+  positions: 1
+- name: rear15
+  type: 110-punch
+  positions: 1
+- name: rear16
+  type: 110-punch
+  positions: 1
+- name: rear17
+  type: 110-punch
+  positions: 1
+- name: rear18
+  type: 110-punch
+  positions: 1
+- name: rear19
+  type: 110-punch
+  positions: 1
+- name: rear20
+  type: 110-punch
+  positions: 1
+- name: rear21
+  type: 110-punch
+  positions: 1
+- name: rear22
+  type: 110-punch
+  positions: 1
+- name: rear23
+  type: 110-punch
+  positions: 1
+- name: rear24
+  type: 110-punch
+  positions: 1
+---
+manufacturer: Telus
+model: Telus Wifi Hub
+slug: telus-wifi-hub
+part_number: ''
+u_height: 1
+is_full_depth: false
+subdevice_role: ''
+comments: ''
+power-ports:
+- name: pwr12v
+  type: ''
+  maximum_draw: null
+  allocated_draw: null
+interfaces:
+- name: SFP1
+  type: 1000base-x-sfp
+  mgmt_only: false
+- name: eth0
+  type: 1000base-t
+  mgmt_only: false
+- name: eth1
+  type: 1000base-t
+  mgmt_only: false
+- name: eth2
+  type: 1000base-t
+  mgmt_only: false
+- name: eth3
+  type: 1000base-t
+  mgmt_only: false
+---
+manufacturer: Ubiquity
+model: EdgeRouter 5-POE
+slug: edgerouter-5-poe
+part_number: ER-5-POE
+u_height: 1
+is_full_depth: false
+subdevice_role: ''
+comments: https://www.ui.com/edgemax/edgerouter-poe/
+console-ports:
+- name: console1
+  type: rj-45
+power-ports:
+- name: pwr24V
+  type: ''
+  maximum_draw: null
+  allocated_draw: null
+interfaces:
+- name: eth0
+  type: 1000base-t
+  mgmt_only: false
+- name: eth1
+  type: 1000base-t
+  mgmt_only: false
+- name: eth2
+  type: 1000base-t
+  mgmt_only: false
+- name: eth3
+  type: 1000base-t
+  mgmt_only: false
+- name: eth4
+  type: 1000base-t
+  mgmt_only: false
+---
+manufacturer: Ubiquity
+model: EdgeRouter Infinity
+slug: edgerouter-infinity
+part_number: ER-8-XG
+u_height: 1
+is_full_depth: false
+subdevice_role: ''
+comments: https://www.ui.com/edgemax/edgerouter-infinity/
+console-ports:
+- name: console1
+  type: rj-45
+power-ports:
+- name: pwr1
+  type: iec-60320-c14
+  maximum_draw: 100
+  allocated_draw: 80
+- name: pwr2
+  type: iec-60320-c14
+  maximum_draw: 100
+  allocated_draw: 80
+interfaces:
+- name: eth0
+  type: 1000base-t
+  mgmt_only: false
+- name: eth1
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: eth2
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: eth3
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: eth4
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: eth5
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: eth6
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: eth7
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: eth8
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+---
+manufacturer: Ubiquity
+model: EdgeSwitch 48 Lite
+slug: edgeswitch-48-lite
+part_number: ES-48-Lite
+u_height: 1
+is_full_depth: false
+subdevice_role: ''
+comments: '[EdgeSwitch Lite](https://www.ui.com/edgemax/edgeswitch-lite/)'
+console-ports:
+- name: console1
+  type: rj-45
+power-ports:
+- name: pwr1
+  type: iec-60320-c14
+  maximum_draw: 56
+  allocated_draw: 40
+- name: pwr24V
+  type: ''
+  maximum_draw: 56
+  allocated_draw: 40
+interfaces:
+- name: 0/1
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/2
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/3
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/4
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/5
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/6
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/7
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/8
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/9
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/10
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/11
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/12
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/13
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/14
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/15
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/16
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/17
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/18
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/19
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/20
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/21
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/22
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/23
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/24
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/25
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/26
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/27
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/28
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/29
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/30
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/31
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/32
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/33
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/34
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/35
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/36
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/37
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/38
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/39
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/40
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/41
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/42
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/43
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/44
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/45
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/46
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/47
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/48
+  type: 1000base-t
+  mgmt_only: false
+- name: 0/49
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: 0/50
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: 0/51
+  type: 1000base-x-sfp
+  mgmt_only: false
+- name: 0/52
+  type: 1000base-x-sfp
+  mgmt_only: false
+---
+manufacturer: Ubiquity
+model: UAP AC PRO
+slug: uap-ac-pro
+part_number: UAP-AC-PRO
+u_height: 0
+is_full_depth: true
+subdevice_role: ''
+comments: ''
+interfaces:
+- name: eth0
+  type: 1000base-t
+  mgmt_only: false
+- name: eth1
+  type: 1000base-t
+  mgmt_only: false
+---
+manufacturer: Ubiquity
+model: UAP HD
+slug: uap-hd
+part_number: UAP-HD
+u_height: 0
+is_full_depth: false
+subdevice_role: ''
+comments: ''
+interfaces:
+- name: eth0
+  type: 1000base-t
+  mgmt_only: false
+- name: eth1
+  type: 1000base-t
+  mgmt_only: false
+---
+manufacturer: Ubiquity
+model: UniFi Switch 8 60W
+slug: unifi-switch-8-60w
+part_number: ES-8-POE
+u_height: 1
+is_full_depth: false
+subdevice_role: ''
+comments: https://store.ui.com/products/unifi-switch-8-60w
+power-ports:
+- name: pwr24v
+  type: ''
+  maximum_draw: 12
+  allocated_draw: 8
+interfaces:
+- name: port1
+  type: 1000base-t
+  mgmt_only: false
+- name: port2
+  type: 1000base-t
+  mgmt_only: false
+- name: port3
+  type: 1000base-t
+  mgmt_only: false
+- name: port4
+  type: 1000base-t
+  mgmt_only: false
+- name: port5
+  type: 1000base-t
+  mgmt_only: false
+- name: port6
+  type: 1000base-t
+  mgmt_only: false
+- name: port7
+  type: 1000base-t
+  mgmt_only: false
+- name: port8
+  type: 1000base-t
+  mgmt_only: false
+---
+manufacturer: Ubiquity
+model: Unifi Cloud Key Gen2 Plus
+slug: unifi-cloud-key-gen2-plus
+part_number: UCK-G2-PLUS
+u_height: 1
+is_full_depth: false
+subdevice_role: ''
+comments: https://store.ui.com/products/unifi-cloudkey-gen2-plus?_pos=2&_sid=b07453a2e&_ss=r
+power-ports:
+- name: pwr1
+  type: ''
+  maximum_draw: 20
+  allocated_draw: 16
+interfaces:
+- name: eth0
+  type: 1000base-t
+  mgmt_only: true
+---
+manufacturer: Ubiquity
+model: Unifi Security Gateway Pro
+slug: unifi-security-gateway-pro
+part_number: USG4
+u_height: 1
+is_full_depth: false
+subdevice_role: ''
+comments: https://www.ui.com/unifi-routing/unifi-security-gateway-pro-4/
+console-ports:
+- name: console1
+  type: rj-45
+power-ports:
+- name: pwr1
+  type: iec-60320-c6
+  maximum_draw: 40
+  allocated_draw: 30
+interfaces:
+- name: LAN1
+  type: 1000base-t
+  mgmt_only: false
+- name: LAN2
+  type: 1000base-t
+  mgmt_only: false
+- name: SFP1
+  type: 1000base-x-sfp
+  mgmt_only: false
+- name: SFP2
+  type: 1000base-x-sfp
+  mgmt_only: false
+- name: WAN1
+  type: 1000base-t
+  mgmt_only: false
+- name: WAN2
+  type: 1000base-t
+  mgmt_only: false
+---
+manufacturer: Ubiquity
+model: Unifi Switch 48-750W
+slug: unifi-switch-48-750w
+part_number: USW-48P-750
+u_height: 1
+is_full_depth: false
+subdevice_role: ''
+comments: https://www.ui.com/unifi-switching/unifi-switch-poe/
+console-ports:
+- name: console1
+  type: rj-45
+power-ports:
+- name: pwr1
+  type: iec-60320-c14
+  maximum_draw: 750
+  allocated_draw: 500
+interfaces:
+- name: SFP+49
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: SFP+50
+  type: 10gbase-x-sfpp
+  mgmt_only: false
+- name: SFP51
+  type: 1000base-x-sfp
+  mgmt_only: false
+- name: SFP52
+  type: 1000base-x-sfp
+  mgmt_only: false
+- name: port1
+  type: 1000base-t
+  mgmt_only: false
+- name: port2
+  type: 1000base-t
+  mgmt_only: false
+- name: port3
+  type: 1000base-t
+  mgmt_only: false
+- name: port4
+  type: 1000base-t
+  mgmt_only: false
+- name: port5
+  type: 1000base-t
+  mgmt_only: false
+- name: port6
+  type: 1000base-t
+  mgmt_only: false
+- name: port7
+  type: 1000base-t
+  mgmt_only: false
+- name: port8
+  type: 1000base-t
+  mgmt_only: false
+- name: port9
+  type: 1000base-t
+  mgmt_only: false
+- name: port10
+  type: 1000base-t
+  mgmt_only: false
+- name: port11
+  type: 1000base-t
+  mgmt_only: false
+- name: port12
+  type: 1000base-t
+  mgmt_only: false
+- name: port13
+  type: 1000base-t
+  mgmt_only: false
+- name: port14
+  type: 1000base-t
+  mgmt_only: false
+- name: port15
+  type: 1000base-t
+  mgmt_only: false
+- name: port16
+  type: 1000base-t
+  mgmt_only: false
+- name: port17
+  type: 1000base-t
+  mgmt_only: false
+- name: port18
+  type: 1000base-t
+  mgmt_only: false
+- name: port19
+  type: 1000base-t
+  mgmt_only: false
+- name: port20
+  type: 1000base-t
+  mgmt_only: false
+- name: port21
+  type: 1000base-t
+  mgmt_only: false
+- name: port22
+  type: 1000base-t
+  mgmt_only: false
+- name: port23
+  type: 1000base-t
+  mgmt_only: false
+- name: port24
+  type: 1000base-t
+  mgmt_only: false
+- name: port25
+  type: 1000base-t
+  mgmt_only: false
+- name: port26
+  type: 1000base-t
+  mgmt_only: false
+- name: port27
+  type: 1000base-t
+  mgmt_only: false
+- name: port28
+  type: 1000base-t
+  mgmt_only: false
+- name: port29
+  type: 1000base-t
+  mgmt_only: false
+- name: port30
+  type: 1000base-t
+  mgmt_only: false
+- name: port31
+  type: 1000base-t
+  mgmt_only: false
+- name: port32
+  type: 1000base-t
+  mgmt_only: false
+- name: port33
+  type: 1000base-t
+  mgmt_only: false
+- name: port34
+  type: 1000base-t
+  mgmt_only: false
+- name: port35
+  type: 1000base-t
+  mgmt_only: false
+- name: port36
+  type: 1000base-t
+  mgmt_only: false
+- name: port37
+  type: 1000base-t
+  mgmt_only: false
+- name: port38
+  type: 1000base-t
+  mgmt_only: false
+- name: port39
+  type: 1000base-t
+  mgmt_only: false
+- name: port40
+  type: 1000base-t
+  mgmt_only: false
+- name: port41
+  type: 1000base-t
+  mgmt_only: false
+- name: port42
+  type: 1000base-t
+  mgmt_only: false
+- name: port43
+  type: 1000base-t
+  mgmt_only: false
+- name: port44
+  type: 1000base-t
+  mgmt_only: false
+- name: port45
+  type: 1000base-t
+  mgmt_only: false
+- name: port46
+  type: 1000base-t
+  mgmt_only: false
+- name: port47
+  type: 1000base-t
+  mgmt_only: false
+- name: port48
+  type: 1000base-t
+  mgmt_only: false
+---
+manufacturer: Unknown
+model: Keyboard LCD Touchpad
+slug: keyboard-lcd-touchpad
+part_number: ''
+u_height: 1
+is_full_depth: false
+subdevice_role: ''
+comments: ''
+power-ports:
+- name: pwr1
+  type: iec-60320-c14
+  maximum_draw: 100
+  allocated_draw: 50

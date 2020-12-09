@@ -1,0 +1,36 @@
+name,slug,description
+APC,apc,Now Schneider Electric
+Apple,apple,
+Arista,arista,Enterprise Network company
+Asus,asus,Computer manufacturing company
+Brother,brother,Printer company
+Cisco,cisco,Enterprise Network company
+D-link,dlink,Networking company
+Debian,debian,Open Source Project
+Dell,dell,Computer and Network manufacturing company
+Delta Electronics,delta-electronics,Power electronics company
+Digi International,digi-international,Remote management
+Digital Loggers,digital-loggers,Remote power
+Elpida,elpida,Memory Company
+HP,hp,Computer and Printer company
+HPe,hpe,Computer and Network manufacturing company
+Hynix Semiconductor,hynix-semiconductor,Memory Company
+IBM,ibm,International Business Machines
+Intel,intel,CPU and storage company
+Kingston,kingston,Memory and storage company
+LSI Corp,lsi,Storage HBA manufacturer
+Leviton,leviton,Wiring company
+Linksys,linksys,Network company (now a part of Cisco)
+Maxtor,maxtor,Storage company (now a part of Seagate)
+Micron Technology,micron-technology,Memory and storage company
+Nanya,nanya,Memory Company
+Proxmox,proxmox,Hyper-converged infrastructure company
+Samsung,samsung,Computer and Storage manufacturing company
+Seagate,seagate,Storage company
+Supermicro,smc,Server manufacturer
+TRENDnet,trendnet,Networking company
+Telus,telus,Telecommunications provider
+Ubiquity,ubnt,Enterprise Networking company
+Unknown,unknown,Unknown manufacturer
+Untangle,untangle,Firewall company
+Western Digital,western-digital,Storage company

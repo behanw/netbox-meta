@@ -1,2 +1,4 @@
 # netbox-meta
-Metadata from netbox
+This is a dump of the metadata I created while setting up netbox for my networks.
+
+Enjoy

@@ -1,0 +1,32 @@
+name,slug,color,vm_role,description
+Chassis,chassis,ffc107,,
+DNS Server,dns-server,607d8b,True,Network name services
+Database server,database-server,9c27b0,True,
+Desktop,desktop,3f51b5,,Desktop computer
+File Server,file-server,00bcd4,True,
+Firewall,firewall,f44336,True,
+KVM,kvm,111111,,Keyboard Video Mouse
+Laptop,laptop,2196f3,,Laptop or Notebook
+Logging Server,logging-server,e91e63,True,Logging and visualization
+Mail server,mail-server,8bc34a,True,
+Media server,media-server,607d8b,True,
+Mobile Phone,mobile-phone,00bcd4,,
+NAS,nas,795548,True,
+Network Appliance,network-appliance,aa1409,True,
+PDU,pdu,111111,,
+Package Cache,package-cache,aa1409,True,Debian package cache
+Patch Panel,patch-panel,2f6a31,True,
+Printer,printer,3f51b5,True,
+Router,router,aa1409,,
+SMTP Server,smtp-server,cddc39,True,
+Speedtest,speedtest,2f6a31,True,
+Switch 10G,switch-10g,673ab7,,
+Switch 1G,switch-1g,9c27b0,True,
+Tablet,tablet,03a9f4,True,
+Terminal Server,terminal-server,ff66ff,,
+UPS,ups,ff5722,,
+VOIP,voip,9e9e9e,True,
+Virtualization Server,virtualization-server,009688,,
+Wall Jacks,wall-jacks,ffffff,,
+Web Server,web-server,607d8b,True,
+Wireless Access Point,wireless-access-point,ff5722,,Wifi Access Point

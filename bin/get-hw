@@ -1,0 +1,2465 @@
+#!/bin/bash
+# Written by Behan Webster
+# License GPLv2
+
+set -e
+set -u
+
+VER=2.9
+
+BRIDGE="/sbin/bridge"
+DETECTVM="/usr/bin/systemd-detect-virt"
+DF="/bin/df"
+DMIDECODE="/usr/sbin/dmidecode"
+ETHTOOL="/sbin/ethtool"
+FREE="/usr/bin/free"
+GETENT="/usr/bin/getent"
+IPMITOOL="/usr/bin/ipmitool"
+IPROUTE="/bin/ip"
+JQ="/usr/bin/jq"
+LLDP="/usr/sbin/lldpcli"
+LSCPU="/usr/bin/lscpu"
+LSOF="lsof"
+#LSOF="/usr/bin/lsof"
+#LSOF1="/usr/sbin/lsof"
+MEGACLI="/usr/sbin/megacli"
+#NMAP="/usr/bin/nmap"
+NPROC="/usr/bin/nproc"
+OVSCTL="/usr/bin/ovs-vsctl"
+PVECM="/usr/bin/pvecm"
+PVEKVM="/usr/sbin/qm"
+PVELXC="/usr/sbin/pct"
+SMARTCTL="/usr/sbin/smartctl"
+SMARTCTL2="/usr/local/bin/smartctl"
+SYSTEMPROFILER="system_profiler"
+ZPOOL="/sbin/zpool"
+
+RED='\e[0;31m'
+GREEN='\e[0;32m'
+YELLOW='\e[0;33m'
+CYAN='\e[0;36m'
+BLUE='\e[0;34m'
+BACK='\e[0m'
+
+DEBUG=
+EXPORT=
+IPOPTS=
+JSON=
+LONG=
+NOCACHE=
+ONLY=
+REMOTE=
+REPLAY=
+TAGS=
+TEST=
+UPDATE=
+USERNAME=root
+VERBOSE=
+
+######################################################################
+# To be set in configuration file
+declare -A AAA ALIAS CHASSIS CPUPART PSU ROLES INVESTIGATE NOSHELL
+declare -A DESCRIPTION IFACETYPE IGNORESERVICE SERVICE SSH
+#declare -A Cluster Role Tenant Vrf
+
+VIAHOST=
+Cluster=
+Role="Network Appliance"
+Tenant=
+Vrf=
+NETBOX=
+TOKEN=
+
+######################################################################
+#for s in {1..64} ;do trap "echo trap $s" $s ;done
+
+######################################################################
+CACHE="$HOME/.cache/$(basename "$0")"
+if [[ -n $CACHE && $CACHE =~ cache/ ]] ; then
+	mkdir -p "$CACHE/"
+	rm -f "${CACHE:?}"/*.json
+fi
+
+######################################################################
+cleanup() {
+	#ps auxww |  grep "$CACHE" | awk '/ ssh / {print $2}' | xargs --no-run-if-empty kill -9
+	pgrep "$CACHE" | xargs --no-run-if-empty kill -9
+	#if [[ -n $VIAHOST ]] ; then
+	#	rm -f "$CACHE/master-"*"$VIAHOST"*
+	#fi
+	#rm -f "$CACHE/master-"*"$HOSTNAME"*
+	rm -f "$CACHE/master-"*
+
+	echo "Done."
+}
+trap cleanup EXIT
+
+######################################################################
+verbose() {
+        if [[ -n $DEBUG || -n $TEST ]] ; then
+                echo -e "${CYAN}T:" "$@" "$BACK" >&2
+        fi
+        if [[ -z $TEST ]] ; then
+                "$@" 2>&1
+                return $?
+        fi
+}
+
+######################################################################
+debug() {
+        [[ -z "$DEBUG" ]] || echo -e "${CYAN}D:" "$@" "${BACK}" >&2
+}
+
+######################################################################
+MASTERPID=$$
+error() {
+        set +x
+        echo -e "${RED}E:" "$@" "$BACK" >&2
+	kill -9 $MASTERPID
+}
+
+######################################################################
+warn() {
+        echo -e "${YELLOW}W:" "$@" "$BACK" >&2
+}
+
+######################################################################
+info() {
+        echo -e "${GREEN}I:" "$@" "$BACK" >&2
+}
+
+######################################################################
+notice() {
+        [[ -z $VERBOSE ]] || echo -e "${BLUE}I:" "$@" "$BACK" >&2
+}
+
+################################################################################
+uniq-list() {
+	local ARRAY
+	mapfile -d '' ARRAY < <(printf '%s\0' "$@" | sort -zu)
+	# shellcheck disable=SC2068
+	echo ${ARRAY[@]}
+}
+
+######################################################################
+get-hostname() {
+	local NAME="${1:-}"
+	[[ -n $NAME ]] || NAME=$(hostname)
+	NAME="${NAME%%.*}"
+	echo "${NAME,,*}"
+}
+
+######################################################################
+get-hostname() {
+	local NAME="${1:-}"
+	[[ -n $NAME ]] || NAME=$(hostname)
+	NAME="${NAME%%.*}"
+	echo "${NAME,,*}"
+}
+
+######################################################################
+OS=
+get-os() {
+	local NAME
+	NAME="$(get-name "$HOSTNAME")"
+	if [[ -n ${NOSHELL[$NAME]:-} ]] ; then
+		OS="None"
+	elif [[ -z ${OS:-} ]] ; then
+		OS="$(remote uname)"
+	fi
+	echo "$OS"
+}
+is-os() {
+	[[ $(get-os) = "$1" ]]
+}
+
+######################################################################
+get-name() {
+	local NAME=${1,,*}
+
+	NAME="${NAME%%.*}"
+	if [[ $NAME =~ ^[a-z]{2,3}[0-9] ]] ; then
+		if [[ -n ${ALIAS[$NAME]:-} ]] ; then
+			NAME=${ALIAS[$NAME]}
+		fi
+		local FIRST="${NAME:0:3}"
+		NAME="${FIRST^^*}${NAME:3}"
+	elif [[ $NAME =~ ^[a-z][a-z]$ ]] ; then
+		NAME="${NAME^^}"
+	else
+		NAME="${NAME^}"
+	fi
+
+	echo "$NAME"
+}
+
+################################################################################
+ssh-session() {
+	local TARGET=$1 MASTERFILE
+
+	MASTERFILE="$(ls "$CACHE/master-"*"$TARGET"* 2>/dev/null)"
+	debug "ssh-session: $TARGET -> $MASTERFILE"
+	if [[ -z $MASTERFILE ]] ; then
+		ssh -MNfS "$CACHE/master-%r@%h:%p" "$TARGET" 2>/dev/null
+	fi
+}
+
+################################################################################
+remote-cmd() {
+	debug "remote-cmd: $*"
+	local VIA=$1 TARGET=$2 CMD; shift; shift
+	CMD="$*"
+	#echo "$VIA $TARGET \"$CMD\""
+	if [[ -n ${AAA[$NAME]:-} ]] ; then
+		export SSHPASS="${AAA[$NAME]}"
+	fi
+	if [[ -n $VIA && $VIA != $(hostname) ]] ; then
+		if [[ -n ${SSHPASS:-} ]] ; then
+			debug "remote-cmd: sshpass $VIA $TARGET $CMD"
+			([[ -z $VERBOSE ]] || set -x
+			sshpass -e ssh -tt "$VIA" "ssh -tt '$TARGET' 2>/dev/null" <<<"$CMD" 2>/dev/null)
+		else
+			debug "remote-cmd: $VIA $TARGET $CMD"
+			([[ -z $VERBOSE ]] || set -x
+			ssh -tt "$VIA" "ssh -tt '$TARGET' '$CMD' 2>/dev/null" 2>/dev/null)
+		fi
+	else
+		if [[ -n ${SSHPASS:-} ]] ; then
+			debug "remote-cmd: sshpass $TARGET $CMD"
+			([[ -z $VERBOSE ]] || set -x
+			sshpass -e ssh -tt "$TARGET" <<<"$CMD" 2>/dev/null)
+		else
+			debug "remote-cmd: $TARGET $CMD"
+			([[ -z $VERBOSE ]] || set -x
+			ssh -tt "$TARGET" "$CMD" 2>/dev/null)
+		fi
+	fi
+	unset SSHPASS
+}
+
+################################################################################
+remoteif() {
+	local VIA=$1; shift
+	local NAME=$1; shift
+	local FILE=$1; shift
+	local SUDO='' FQDN WHOM VIATARGET TARGET
+	if [[ -n $REMOTE && -n $NAME ]] ; then
+		[[ $VIA != "$NAME" ]] || VIA=''
+		[[ $USERNAME = root ]] || SUDO=sudo
+		if [[ $USERNAME = "$USER" ]] ; then
+			WHOM=
+		else
+			WHOM="$USERNAME@"
+		fi
+		if [[ -n $VIA ]] ; then
+			VIATARGET="${SSH[$(get-name "$VIA")]:-$WHOM$VIA}"
+			FQDN=$(remote-cmd "" "$VIATARGET" "getent hosts $NAME")
+			FQDN="${FQDN//$'\r'/}"
+		else
+			debug "VIA:$VIA NAME:$NAME FILE:$FILE $*"
+			FQDN=$(lookup-fqdn "$NAME")
+		fi
+		if [[ -z $FQDN ]] ; then
+			error "$NAME not found in DNS"
+			return 1
+		fi
+		TARGET="${SSH[$(get-name "$NAME")]:-$WHOM$NAME}"
+		if [[ -n ${VIATARGET:-} ]] ; then
+			ssh-session "$VIATARGET"
+		else
+			ssh-session "$TARGET"
+		fi
+		if [[ $FILE = / || ! $FILE =~ / ]] ; then
+			remote-cmd "$VIA" "$TARGET" "$*" | sed 's/\r//g'
+		elif [[ -z ${1:-} ]] ; then
+			remote-cmd "$VIA" "$TARGET" "test -e $FILE"
+		else
+			remote-cmd "$VIA" "$TARGET" "if [[ -e $FILE ]] ; then $SUDO" "$*" "; fi" | sed 's/\r//g'
+		fi
+	elif [[ -z ${1:-} ]] ; then
+		[[ -e $FILE ]]
+	else
+		[[ $FILE != / ]] || FILE="$1"
+		debug "remoteif local: $FILE => $*"
+		if [[ -e $FILE ]] ; then sudo "$@" ; fi
+	fi
+}
+
+################################################################################
+remote-exists() {
+	debug "remote-exists: $*"
+	remoteif "$VIAHOST" "$HOSTNAME" "$*"
+}
+
+################################################################################
+remote-nocheck() {
+	remoteif "$VIAHOST" "$HOSTNAME" "/" "$@"
+}
+
+################################################################################
+remote() {
+	remoteif "$VIAHOST" "$HOSTNAME" "$1" "$@"
+}
+
+################################################################################
+remote-cat() {
+	local NAME
+	NAME="$(get-name "$HOSTNAME")"
+	if [[ -z ${AAA[$NAME]:-} ]] ; then
+		remoteif "$VIAHOST" "$HOSTNAME" "$1" "cat" "$1"
+	fi
+}
+
+################################################################################
+remote-via-cat() {
+	local NAME
+	[[ -n ${VIAHOST:-} ]] || return
+	NAME="$(get-name "$HOSTNAME")"
+	if [[ -z ${AAA[$NAME]:-} ]] ; then
+		remoteif "" "$VIAHOST" "$1" "cat" "$1"
+	fi
+}
+
+################################################################################
+remote-find() {
+	remoteif "$VIAHOST" "$HOSTNAME" "$1" "find" "$@"
+}
+
+################################################################################
+lookup-fqdn() {
+	local ADDR=${1%%/*}
+	#ADDR=$(echo $ADDR)
+	"$GETENT" hosts "$ADDR" | awk '{print $2}'
+}
+
+################################################################################
+VIRTUAL=
+is-native() {
+	local NAME
+	NAME="$(get-name "$HOSTNAME")"
+
+	if [[ -n ${NOSHELL[$NAME]:-} ]] ; then
+		VIRTUAL=none
+	elif [[ -z ${VIRTUAL:-} ]] ; then
+		VIRTUAL=$(remote $DETECTVM)
+		if [[ $VIRTUAL =~ ^none ]] ; then
+			VIRTUAL=host
+		fi
+		[[ -n $VIRTUAL ]] || VIRTUAL="$(remote $LSCPU | awk '/Hypervisor vendor:/ {print $3}')"
+		[[ -n $VIRTUAL ]] || VIRTUAL=host
+		debug "is-native: $VIRTUAL"
+	fi
+	[[ $VIRTUAL = host ]]
+}
+
+################################################################################
+AUTH=
+MIME=
+ACCEPT=
+CONTENT=
+init_vars() {
+	AUTH="Authorization: Token $TOKEN"
+	MIME="application/json"
+	ACCEPT="Accept: $MIME"
+	CONTENT="Content-Type: $MIME"
+}
+
+################################################################################
+TOKEN_OKAY=
+check-token() {
+	[[ -z $EXPORT ]] || error "No API access during export"
+	[[ -z $TOKEN_OKAY ]] || return 0
+	[[ -n $NETBOX ]] || error "No Netbox URL defined"
+	[[ -n $TOKEN ]] || error "No API Token defined"
+	TOKEN_OKAY=y
+}
+
+################################################################################
+get-netbox() {
+	local API=$1; shift
+	local VARS=${1:-}; shift
+	local OUTPUT=${1:--}; shift
+
+	check-token
+	debug "get-netbox: $API/?$VARS"
+	( [[ -z $DEBUG ]] || set -x
+	curl -s -H "$AUTH" -H "$ACCEPT; indent=2" \
+		-o "${OUTPUT:-/dev/null}" \
+		"$NETBOX/$API/?limit=0${VARS:+&$VARS}" )
+}
+
+################################################################################
+curl-netbox() {
+	local MSG=$1; shift
+	local METHOD=$1; shift
+	local API=$1; shift
+	local OUTPUT=$1; shift
+	[[ -z $VERBOSE || -n $TEST && -z $DEBUG ]] || echo "$@"
+
+	check-token
+	info "$MSG"
+	[[ -z $DEBUG ]] || return 0
+	${TEST:+echo} curl -s -H "$AUTH" -H "$ACCEPT" -H "$CONTENT" \
+		-X "$METHOD" -o "${OUTPUT:-/dev/null}" \
+		"$NETBOX/$API/" -d "$@"
+}
+
+################################################################################
+post-netbox() {
+	local NAME=$1; shift
+	local API=$1; shift
+	curl-netbox "Adding $NAME" "POST" "$API" "/dev/null" "$@"
+}
+
+################################################################################
+put-netbox() {
+	local NAME=$1; shift
+	local API=$1; shift
+	[[ -n $UPDATE || -n $REPLAY ]] || return 0
+	curl-netbox "Updating $NAME" "PUT" "$API" "/dev/null" "$@"
+}
+
+################################################################################
+json-description() {
+	local TYPE=$1; shift
+	local NODE; NODE=$(get-name "$1"); shift
+	local NAME=$1; shift
+	local DESC="${1:-${DESCRIPTION[$TYPE-$NODE-$NAME]:-${DESCRIPTION[$TYPE-$NAME]:-${DESCRIPTION[$TYPE]:-}}}}"
+	[[ -z $DESC ]] || echo "\"description\": \"${DESC:0:199}\","
+}
+
+################################################################################
+json-tags() {
+	local TAG TAGS=
+	for TAG in "$@" ; do
+		# shellcheck disable=SC2116
+		TAG=$(echo $TAG)
+		# shellcheck disable=SC2089
+		TAGS+="\"${TAG:0:99}\","
+	done
+	echo "${TAGS%,}"
+}
+
+################################################################################
+json-inventory() {
+	local DEVID=$1; shift
+	local NAME=${1:0:49}; shift
+	local MAN=$1; shift
+	local PART=${1:0:49}; shift
+	local SN=${1:0:49}; shift
+	local DESC
+	DESC="$(json-description "inventory" "$HOSTNAME" "$NAME")"; shift
+
+	# shellcheck disable=SC2086,SC2116
+	cat <<ENDJSON
+{
+  "device": $DEVID,
+  "parent": null,
+  "name": "$NAME",
+  "manufacturer": $MAN,
+  "part_id": "$PART",
+  "serial": "$SN",
+  "asset_tag": null,
+  "discovered": true,
+  $DESC
+  "tags": [ $(json-tags "$@") ]
+}
+ENDJSON
+}
+
+################################################################################
+in-inventory() {
+	local ID=$1 NAME=${2:0:49} KEY VALUE
+
+	get-netbox "dcim/inventory-items" "device_id=$ID&name=$NAME" \
+		| "$JQ" '.results[] | .id'
+}
+
+################################################################################
+add-inventory() {
+	local NAME DEVID M J
+
+	if [[ -n $EXPORT ]] ; then
+		export-csv "inventory" "$HOSTNAME" "$@"
+		return 0
+	fi
+
+	NAME=${1/_SSD_/_}; shift
+	DEVID=$(lookup-device-id "$HOSTNAME") || return 1
+	if [[ -n $(in-inventory "$DEVID" "$NAME") ]] ; then
+		warn "Inventory $NAME already added to $HOSTNAME"
+		[[ -n $DEBUG ]] || return 0
+	fi
+
+	M="$1"
+	if [[ $M = unknown ]] ; then
+		warn "Bailing out: Unknown Manufacturer for $*"
+		return 0
+	fi
+	#M="$(lookup-manufacturer "${1// /_}")"
+	M="$(lookup-manufacturer "$M")"
+	if [[ -z $M ]] ; then
+		#error "add-inventory: $1($M) isn't found"
+		exit 1
+	fi
+	shift
+
+	J="$(json-inventory "$DEVID" "$NAME" "$M" "$@")"
+	post-netbox "$NAME" "dcim/inventory-items" "$J"
+}
+
+################################################################################
+export-csv() {
+	local COL
+	echo -n "\"$1\""; shift
+	for COL in "$@" ; do
+		echo -ne ",\"$COL\""
+	done
+	echo
+}
+
+################################################################################
+import-csv() {
+	local LINE TYPE A
+	while read -r LINE ; do
+		# shellcheck disable=SC2001
+		LINE="$(sed 's/[\n\r]+$//' <<<"$LINE")"
+		# shellcheck disable=SC2046
+		IFS=' ' read -r TYPE HOSTNAME <<<$(awk -F\" '{print $2" "$4}' <<<"$LINE")
+		readarray -t -d';' A <<<"$(sed -re 's/"'"$TYPE"'","'"$HOSTNAME"'","//; s/  / /g; s/ *" */"/; s/","/;/g; s/"$//g' <<<"$LINE")"
+
+		case "$TYPE" in
+			interface) add-iface "${A[@]}";;
+			inventory) A[1]="${A[1]// /_}"; add-inventory "${A[@]}";;
+			ip) add-ip "${A[@]}";;
+			virt-interface) add-virt-iface "${A[@]}";;
+			vm) add-vm "${A[@]}"; VMS[$HOSTNAME]="$(replay-cmd "add-vm" "${A[@]}")";;
+			*) error "Not a supported record: $LINE";;
+		esac
+	done <<<"$(cat "${1:--}")"
+
+	replay-vms
+}
+
+################################################################################
+lookup-device-id() {
+	local NAME CHECK=${2:-} ID FILE="$CACHE/devices.json"
+	NAME=$(get-name "$1")
+	
+	debug "lookup-device-id: $NAME in $FILE"
+	[[ -e $FILE ]] || get-netbox "dcim/devices" "" "$FILE"
+	ID=$($JQ ".results[] | select( .name | match(\"$NAME\")) | .id" "$FILE")
+	if [[ -z $ID ]] ; then
+		[[ -n $CHECK ]] || warn "Device $NAME not found"
+		return 1
+	fi
+	echo "${ID//$'\r'/}"
+}
+
+################################################################################
+lookup-manufacturer() {
+	local NAME=$1 ID FILE="$CACHE/manufacturers.json"
+
+	debug "lookup-manufacturer: $NAME in $FILE"
+	[[ -e $FILE ]] || get-netbox "dcim/manufacturers" "" "$FILE"
+	ID=$($JQ ".results[] | select( .name | match(\"$NAME\")) | .id" "$FILE")
+	if [[ -z $ID ]] ; then
+		#NAME="${NAME,,*}"
+		#[[ $NAME != $1 ]] || error "Manufacturer $NAME not found"
+		#ID=$(lookup-manufacturer "$NAME")
+		[[ -n $ID ]] || error "Manufacturer $NAME not found"
+	fi
+	echo "${ID//$'\r'/}"
+}
+
+################################################################################
+lookup-tag() {
+	local NAME=$1 ID FILE="$CACHE/tags.json"
+
+	#NAME=$(echo $NAME)
+	debug "lookup-tag: $NAME in $FILE"
+	[[ -e $FILE ]] || get-netbox "extras/tags" "" "$FILE"
+	$JQ ".results[] | select( .name | match(\"$NAME\")) | .name" "$FILE"
+}
+
+################################################################################
+add-tag() {
+	local NAME=$1 DEVID VMID QUERY; shift
+
+	if [[ -n $JSON ]] ; then
+		if DEVID=$(lookup-device-id "$NAME" "check") ; then
+			QUERY="device_id=$DEVID"
+		elif VMID=$(lookup-vm "$NAME" "check") ; then
+			QUERY="virtual_machine_id=$VMID"
+		else
+			warn "$NAME not found when looking for Services"
+			return 1
+		fi
+		info "Add tags $* to $QUERY"
+	else
+		echo "* TAG: $NAME:" "$@"
+	fi
+}
+
+################################################################################
+dmi() {
+	local HASDMI="$CACHE/$HOSTNAME-dmidecode-exists.stamp"
+	local NODMI="$CACHE/$HOSTNAME-dmidecode-none.stamp"
+	if [[ -e $HASDMI ]] ; then
+		[[ -z ${2:-} ]] || ( remote-nocheck $DMIDECODE "$@" ) | grep -v 'O\.E\.M\.'
+	elif [[ -e $NODMI ]] ; then
+		return 1
+	elif remote-exists "$DMIDECODE" ; then
+		debug "$HOSTNAME has DMI"
+		touch "$HASDMI"
+		[[ -z ${2:-} ]] || dmi "$@"
+	else
+		touch "$NODMI"
+		return 1
+	fi
+}
+has-dmi() {
+	dmi
+}
+
+################################################################################
+get-bios() {
+	local VENDOR
+	is-native && has-dmi && [[ -z $EXPORT && -z $JSON ]] || return 0
+	debug "get-bios: $*"
+	if VENDOR="$(dmi -s bios-vendor)" ; then
+		echo "* BIOS: $VENDOR v$(dmi -s bios-version) ($(dmi -s bios-release-date))"
+	fi
+}
+
+################################################################################
+get-bmc() {
+	is-native && has-dmi && [[ -z $EXPORT && -z $JSON ]] || return 0
+	debug "get-bmc: $*"
+	local KEY VALUE
+	unset DATA
+	declare -A DATA
+
+	while IFS=: read -r KEY VALUE ; do
+		[[ -n $KEY ]] || return 0
+		DATA[$KEY]="$VALUE"
+	done <<<"$(remote $IPMITOOL bmc info | sed 's/ *: */:/; s/^ *//; s/ *$//; s/ /_/g')"
+
+	echo "* BMC: ${DATA[Manufacturer_Name]:-} v${DATA[Firmware_Revision]:-} (${DATA[IPMI_Version]:-})"
+}
+
+################################################################################
+get-system() {
+	local MFG OUTPUT
+	is-native && [[ -z $EXPORT && -z $JSON ]] || return 0
+	debug "get-system: $*"
+
+	OUTPUT="$(get-vyos-version)"
+	if [[ -n "$OUTPUT" ]] ; then
+		#sed 's/^/* /' <<<"$OUTPUT"
+		echo "* $OUTPUT"
+	elif is-os "Darwin" ; then
+		get-darwin-system
+	elif has-dmi ; then
+		if MFG="$(dmi -s system-manufacturer)" ; then
+			echo "* SYSTEM: $MFG $(dmi -s system-product-name) v$(dmi -s system-version) SN-$(dmi -s system-serial-number) UUID-$(dmi -s system-uuid)"
+		fi
+	fi
+}
+
+################################################################################
+get-baseboard() {
+	local MFG
+	is-native && has-dmi && [[ -z $EXPORT && -z $JSON ]] || return 0
+	debug "get-baseboard: $*"
+	if MFG="$(dmi -s baseboard-manufacturer)" ; then
+		echo "* BASEBOARD: $MFG $(dmi -s baseboard-product-name) v$(dmi -s baseboard-version) SN-$(dmi -s baseboard-serial-number)"
+	fi
+}
+
+################################################################################
+get-chassis() {
+	local MFG NAME
+	is-native && has-dmi && [[ -z $EXPORT && -z $JSON ]] || return 0
+	debug "get-chassis: $*"
+	if MFG="$(dmi -s chassis-manufacturer)" ; then
+		NAME=$(get-name "$HOSTNAME")
+		echo "* CHASSIS: ${CHASSIS[$NAME]:-$MFG $(dmi -s chassis-type) v$(dmi -s chassis-version) SN-$(dmi -s chassis-serial-number)}"
+	fi
+}
+
+################################################################################
+json-power() {
+	local NAME M P='' SN REV W
+	NAME="${HOSTNAME}_${1%:*}"; shift
+	while [[ ! $1 =~ [0-9-] ]] ; do
+		M+=" "$1; shift
+	done
+	M="${M# }"
+	#info "$M"
+	if [[ ! $1 =~ ^SN- ]] ; then
+		P=$1; shift
+	fi
+	SN="${1#SN-}"; shift
+	if [[ ! $1 =~ W$ ]] ; then
+		REV=$1; shift
+	fi
+	W=$1; shift
+
+	#echo "$NAME" "$M" "$P" "$SN" "$REV $W" "PSU" "$@"; return
+	add-inventory "$NAME" "$M" "$P" "$SN" "$REV $W" "PSU" "$@"
+}
+
+################################################################################
+get-power() {
+	is-native || return 0
+	unset DATA
+	local NAME LINE PS='' KEY VALUE
+	NAME=$(get-name "$HOSTNAME")
+	debug "get-power: $*"
+
+	if [[ -n ${PSU[$NAME]:-} ]] ; then
+		if [[ -n $JSON ]] ; then
+			while read -r LINE ; do
+				# shellcheck disable=SC2086
+				json-power $LINE
+			done <<<"${PSU[$NAME]}"
+		else
+			awk '{print "* "$0}' <<<"${PSU[$NAME]}"
+		fi
+		return
+	fi
+
+	while read -r LINE ; do
+		if [[ $LINE =~ ^Handle ]]; then
+			unset PS
+			unset DATA
+		elif [[ $LINE == "System Power Supply" ]] ; then
+			PS=y
+			declare -A DATA
+		elif [[ -n ${PS:-} ]] ; then
+			if [[ $LINE =~ ^$ ]] ; then
+				if [[ -n $JSON ]] ; then
+					NAME="${HOSTNAME}_PSU${DATA[power_unit_group]}"
+					add-inventory "$NAME" "${DATA[manufacturer]}" "${DATA[name]}" "SN-${DATA[serial_number]}" "${DATA[revision]} ${DATA[max_power_capacity]}" "PSU"
+				else
+					echo "* PSU${DATA[power_unit_group]}: ${DATA[manufacturer]} ${DATA[name]} SN-${DATA[serial_number]} ${DATA[revision]} ${DATA[max_power_capacity]}"
+				fi
+			else
+				LINE=$(sed 's/^ *//; s/ *$//; s/ *: */:/' <<<"$LINE")
+				IFS=: read -r KEY VALUE <<<"$LINE"
+				KEY=$(sed 's/ /_/g; s/\(.*\)/\L\1/' <<<"$KEY")
+				DATA[$KEY]="$VALUE"
+			fi
+		fi
+	done <<<"$(dmi) 2>/dev/null"
+}
+
+################################################################################
+get-processor() {
+	is-native || return 0
+	local DMI CPU NUM=0 HNAME NAME M SN=""
+	HNAME=$(get-name "$HOSTNAME")
+	debug "get-processor: $*"
+
+	if DMI="$(dmi -s processor-version)" ; then
+		while read -r CPU ; do
+			NUM=$(( NUM + 1 ))
+			if [[ -n $JSON ]] ; then
+				NAME="${HOSTNAME}_CPU$NUM"
+				if [[ $CPU =~ Intel ]] ; then
+					M="Intel"
+				else
+					M="Unknown"
+				fi
+				add-inventory "$NAME" "$M" "${CPUPART[$HNAME]:-Unknown}" "$SN" "$CPU" "CPU"
+			else
+				echo "* CPU$NUM: $CPU ${CPUPART[$HNAME]:-}"
+			fi
+		done <<<"$DMI"
+	else
+		remote "$LSCPU"
+	fi
+}
+
+################################################################################
+get-memory() {
+	is-native || return 0
+	unset DATA
+	local DMI LINE PS='' KEY VALUE
+	debug "get-memory: $*"
+
+	if DMI="$(dmi -t memory)" ; then
+		while read -r LINE ; do
+			if [[ $LINE =~ ^Handle ]]; then
+				PS=
+				unset DATA
+			elif [[ $LINE == "Memory Device" ]] ; then
+				PS=y
+				declare -A DATA
+			elif [[ -n $PS ]] ; then
+				if [[ $LINE =~ ^$ ]] ; then
+					if [[ ${DATA[type]:-} == Unknown ]] ; then
+						[[ -n $JSON ]] || echo "* ${DATA[locator]}: Empty"
+					elif [[ -n $JSON ]] ; then
+						add-inventory "${HOSTNAME}_${DATA[locator]}" "${DATA[manufacturer]}" "${DATA[part_number]}" "${DATA[serial_number]}" "${DATA[size]} ${DATA[type]} ${DATA[configured_memory_speed]:-}" "RAM"
+					else
+						echo "* ${DATA[locator]}: ${DATA[size]} ${DATA[type]} ${DATA[manufacturer]} ${DATA[part_number]} SN-${DATA[serial_number]} ${DATA[configured_memory_speed]}"
+					fi
+				else
+					LINE=$(sed 's/^ *//; s/ *$//; s/ *: */:/' <<<"$LINE")
+					IFS=: read -r KEY VALUE <<<"$LINE"
+					KEY=$(sed 's/ /_/g; s/\(.*\)/\L\1/' <<<"$KEY")
+					DATA[$KEY]="$VALUE"
+				fi
+			fi
+		done <<<"$DMI"
+	else
+		remote "$FREE"
+	fi
+}
+
+################################################################################
+get-lsi() {
+	is-native || return 0
+	[[ -z $EXPORT ]] || return 0
+	[[ -z $JSON ]] || return 0
+	debug "get-lsi: $*"
+	remote $MEGACLI -AdpAllInfo -a0 | awk '/^FW Package Build:/ {print "* LSI "$0} /^[A-Z].*Version.*:/ {print "* LSI "$0}'
+	if [[ -n $LONG ]] ; then
+		remote $MEGACLI -AdpAllInfo -a0 || return 0
+	fi
+	return 0
+}
+
+################################################################################
+get-drive() {
+	local DRIVE=$1 LUN NAME KEY VALUE SMART
+	shift
+	unset DATA
+	declare -A DATA
+
+	ID="$(stat -c '%N' /dev/disk/by-id/* | grep -v -e 'wwn-' -e '-eui' | awk -F"'" "/$DRIVE'\$/ {print \$2}")"
+	LUN="$(sed -r 's/^.*,([0-9]+).*$/\1/' <<<"$*")"
+	DRIVE="${LUN:+$LUN,}$DRIVE"
+	LUN="${LUN:-$DRIVE}"
+	ID="${ID:-/dev/$DRIVE}"
+	#NAME="$(sed 's|.*/||' <<<"$ID")"
+	NAME="${ID/.*\//}"
+	if [[ -n $LUN && $LUN != "$NAME" ]] ; then
+		NAME="${HOSTNAME}_$LUN,$NAME"
+	else
+		NAME="${HOSTNAME}_$NAME"
+	fi
+	debug "get-drive: ID:$ID LUN:$LUN DRIVE:$DRIVE NAME: $NAME"
+
+	SMART="$(remote $SMARTCTL -i "$ID" "$@")"
+	[[ -n $SMART ]] || SMART="$(remote $SMARTCTL2 -i "$ID" "$@")"
+	while IFS=: read -r KEY VALUE ; do
+		[[ -n $KEY ]] || continue
+		KEY=$(sed 's/ /_/g; s/\(.*\)/\L\1/' <<<"$KEY")
+		#info "$KEY => $VALUE"
+		DATA[$KEY]="$VALUE"
+	done <<<"$(sed 's/ *: */:/; s/^ *//; s/ *$//' <<<"$SMART")"
+
+	#info "before"
+	#local D
+	#for D in ${!DATA[@]} ; do
+	#	echo "DATA[$D]=${DATA[$D]}"
+	#done | sort >&2
+
+	if [[ ${DATA[product]:-} =~ VIRTUAL ]] ; then
+		return
+	fi
+
+	shopt -s nocasematch
+	case "${DATA[vendor]:-${DATA[product]:-${DATA[device_model]:-${DATA[model_number]:-${DATA[model_family]:-}}}}}" in
+		APPLE*) DATA[vendor]="Apple";;
+		ibm*) DATA[vendor]="IBM";;
+		intel*|mk*) DATA[vendor]="Intel";;
+		kingston*) DATA[vendor]="Kingston";;
+		maxtor*) DATA[vendor]="Maxtor";;
+		samsung*) DATA[vendor]="Samsung";;
+		seagate*|st*) DATA[vendor]="Seagate";;
+		wd*|western*) DATA[vendor]="Western Digital";;
+		*) DATA[vendor]="unknown";;
+	esac
+	shopt -u nocasematch
+	# shellcheck disable=SC2116
+	DATA[product]="$(echo ${DATA[product]:-} ${DATA[model_number]:-} ${DATA[device_model]:-})"
+	DATA[firmware_version]="${DATA[firmware_version]:-${DATA[revision]:-}}"
+
+	DATA[size]=${DATA[user_capacity]:-${DATA[total_nvm_capacity]:-${DATA[namespace_1_size/capacity]:-}}}
+	DATA[size]=$(sed -r 's/^.*\[(.*)\]/\1/' <<<"${DATA[size]}")	
+	if [[ ${DATA[rotation_rate]:-} =~ S ]] ; then
+		DATA[type]="SSD"
+	elif [[ ${DATA[rotation_rate]:-} =~ rpm || -n ${DATA[ata_version_is]:-} ]] ; then
+		DATA[type]="HDD"
+	else
+		DATA[type]="NVME"
+	fi
+
+	#info "after"
+	#local D
+	#for D in ${!DATA[@]} ; do
+	#	echo "DATA[$D]=${DATA[$D]}"
+	#done | sort >&2
+
+	if [[ -n $JSON ]] ; then
+		add-inventory "$NAME" "${DATA[vendor]}" "${DATA[product]}" "${DATA[serial_number]:-}" "${DATA[size]} ${DATA[type]} ${DATA[transport_protocol]:-} ${DATA[firmware_version]:-} ${DATA[sata_version_is]:-${DATA[ata_version_is]:-}}" "${DATA[type]}"
+	else
+		echo "* DRIVE ${DRIVE##*/}:" "$NAME" "${DATA[vendor]}" "${DATA[product]}" "SN-${DATA[serial_number]:-}" "${DATA[size]} ${DATA[type]} ${DATA[transport_protocol]:-} ${DATA[firmware_version]:-} ${DATA[sata_version_is]:-${DATA[ata_version_is]:-}}" "${DATA[type]}"
+	fi
+}
+
+################################################################################
+get-drives() {
+	debug "get-drives: $*"
+	is-native || return 0
+	local D ID SM
+	declare -A DEV
+	# shellcheck disable=SC2034
+	while IFS=$'\t' read -r D ID SM ; do
+		if [[ -n $D && -e $D ]] ; then
+			D=${D##*/}
+			if [[ -n ${DEV[$D]:-} ]] ; then
+				DEV[$D]="${DEV[$D]}:$D $SM"
+			else
+				DEV[$D]="$D $SM"
+			fi
+		fi
+	done <<<"$(remote-cat /etc/sdetail.conf | grep -v '^#')"
+
+	local DISKS M N 
+	DISKS="$(remote lsblk | awk '/[sn].*disk *$/ {print $1}')"
+	[[ -n $DISKS ]] || DISKS="$(remote diskutil list | awk '/^\/.*physical/ {print $1}' | sed 's|^.*/||')"
+	declare M
+	for D in $DISKS ; do
+		IFS=: read -r -a M <<<"${DEV[$D]:-$D}"
+		for N in "${M[@]}" ; do
+			# shellcheck disable=SC2086
+			get-drive $N
+		done
+	done
+}
+
+################################################################################
+get-zpool() {
+	is-native || return 0
+	[[ -z $EXPORT ]] || return 0
+	[[ -z $JSON ]] || return 0
+	debug "get-zpool: $*"
+	remote "$ZPOOL" list
+}
+
+################################################################################
+lookup-cluster() {
+	local NAME=$1 ID FILE="$CACHE/clusters.json"
+
+	if [[ -z $NAME ]] ; then
+		warn "No Cluster specified: defaulting to $Cluster"
+		NAME="$Cluster"
+	fi
+	debug "lookup-cluster: $NAME in $FILE"
+	[[ -e $FILE ]] || get-netbox "virtualization/clusters" "" "$FILE"
+	ID=$($JQ ".results[] | select( .name | match(\"$NAME\")) | .id" "$FILE")
+	[[ -n $ID ]] || error "Cluster $NAME not found"
+	echo "${ID//$'\r'/}"
+}
+
+################################################################################
+lookup-role() {
+	local NAME=$1 ID FILE="$CACHE/roles.json"
+
+	if [[ -z $NAME ]] ; then
+		warn "No Role specified: defaulting to $Role"
+		NAME="$Role"
+	fi
+	debug "lookup-role: $NAME in $FILE"
+	[[ -e $FILE ]] || get-netbox "dcim/device-roles" "" "$FILE"
+	ID=$($JQ ".results[] | select( .name | match(\"$NAME\")) | .id" "$FILE")
+	[[ -n $ID ]] || error "Role $NAME not found"
+	echo "${ID//$'\r'/}"
+}
+
+################################################################################
+lookup-platform() {
+	local NAME=$1 ID FILE="$CACHE/platforms.json"
+
+	debug "lookup-platform: $NAME in $FILE"
+	[[ -e $FILE ]] || get-netbox "dcim/platforms" "" "$FILE"
+	ID=$($JQ ".results[] | select( .name | match(\"$NAME\")) | .id" "$FILE")
+	[[ -n $ID ]] || error "Platform $NAME not found"
+	echo "${ID//$'\r'/}"
+}
+
+################################################################################
+json-vm() {
+	local ADDIP=y
+	if [[ $1 = --noip ]] ; then
+		ADDIP=
+		shift
+	fi
+
+	local NAME; NAME=$(get-name "$HOSTNAME")
+	local CLUSTER=${1:-$Cluster}; shift
+	local ROLE="${1:-$Role}"; shift
+	local TENANT=${1:-$Tenant}; shift
+	local PLATFORM=$1; shift
+	local IPv4 IPv6
+	IPv4="$(lookup-ip "$1")"; shift
+	IPv6="$(lookup-ip "$1" "check")"; shift
+	local VCPUS=$1; shift
+	local MEMORY=$1; shift
+	local DISK=$1; shift
+
+  	local PRIMARY4="${IPv4:+\"primary_ip4\": $IPv4,}"
+  	local PRIMARY6="${IPv6:+\"primary_ip6\": $IPv6,}"
+
+	# shellcheck disable=SC2086,SC2116
+	cat <<ENDJSON
+{
+  "name": "$NAME",
+  "status": "active",
+  "cluster": $(lookup-cluster "$CLUSTER"),
+  "role": $(lookup-role "$ROLE"),
+  "tenant": $(lookup-tenant "$TENANT"),
+  "platform": $(lookup-platform "$PLATFORM"),
+  ${ADDIP:+$PRIMARY4$PRIMARY6}
+  "vcpus": $VCPUS,
+  "memory": $MEMORY,
+  "disk": $DISK,
+  "tags": [ $(json-tags "$@") ]
+}
+ENDJSON
+}
+
+################################################################################
+replay-cmd() {
+	local ALL="$1" ARG; shift
+	for ARG in "$@" ; do
+		ALL+=" \"$ARG\""
+	done
+	echo "$ALL"
+}
+
+################################################################################
+declare -A VMS
+add-vm() {
+	debug "add-vm $*"
+	if [[ -n $EXPORT ]] ; then
+		export-csv "vm" "$HOSTNAME" "$@"
+		return 0
+	fi
+
+	if [[ -n $JSON ]] ; then
+		local ID
+		if ID=$(lookup-vm "$HOSTNAME") ; then
+			J="$(json-vm "$@")"
+			put-netbox "Virtual $HOSTNAME" "virtualization/virtual-machines/$ID" "$J"
+		else
+			J="$(json-vm --noip "$@")"
+			post-netbox "Virtual $HOSTNAME" "virtualization/virtual-machines" "$J"
+
+			VMS[$HOSTNAME]="REPLAY=y $(replay-cmd "add-vm" "$@")"
+			warn "Will update VM $HOSTNAME after detected IPs"
+		fi
+		rm -f "$CACHE/vms.json"
+	else
+		# shellcheck disable=SC2048,SC2086
+		echo "$(get-name "$HOSTNAME"):" $*
+	fi
+}
+
+################################################################################
+get-cluster() {
+	echo "$Cluster"
+}
+
+################################################################################
+get-role() {
+	local ROLE="$Role" NAME
+	NAME="$(get-name "$HOSTNAME")"
+	if [[ -n ${ROLES[$NAME]:-} ]] ; then
+		ROLE="${ROLES[$NAME]}"
+	fi
+	debug "get-role: $HOSTNAME => $ROLE"
+	echo "$ROLE"
+}
+
+################################################################################
+get-tenant() {
+	echo "$Tenant"
+}
+
+################################################################################
+get-platform() {
+	if remote-cat /etc/os-release | grep -q Debian; then
+		echo "Debian"
+	fi
+}
+
+################################################################################
+get-vm() {
+	if is-native ; then
+		return 0
+	fi
+	local CLUSTER ROLE TENANT IP4 IP6 PLATFORM VCPUS MEMORY DISK TAGS
+	debug "get-vm: $*"
+
+	CLUSTER="$(get-cluster)"
+	ROLE="$(get-role)"
+	TENANT="$(get-tenant)"
+	PLATFORM="$(get-platform)"
+	IP4="$(only-ip -4)"
+	IP6="$(only-ip -6)"
+	VCPUS="$(remote $NPROC)"
+	MEMORY="$(remote $FREE -m | awk '/^Mem:/ {print $2}')"
+	DISK="$(remote $DF -h / | awk '/\/$/ {print $2}' | sed 's/[A-Z]$//' | xargs printf '%.0f\n')"
+	TAGS="${VIRTUAL^^*}"
+
+	add-vm "$CLUSTER" "$ROLE" "$TENANT" "$PLATFORM" "${IP4:-${IPv4:-}}" "${IP6:-${IPv6:-}}" "$VCPUS" "$MEMORY" "$DISK" "$TAGS"
+}
+
+################################################################################
+lookup-tenant() {
+	local NAME=$1 ID FILE="$CACHE/tenants.json"
+
+	if [[ -z $NAME ]] ; then
+		warn "No Tenant specified: defaulting to $Tenant"
+		NAME="$Tenant"
+	fi
+	debug "lookup-tenant: $NAME in $FILE"
+	[[ -e $FILE ]] || get-netbox "tenancy/tenants" "" "$FILE"
+	ID=$($JQ ".results[] | select( .name | match(\"$NAME\")) | .id" "$FILE")
+	[[ -n $ID ]] || error "Tenant $NAME not found"
+	echo "${ID//$'\r'/}"
+}
+
+################################################################################
+lookup-vrf() {
+	local NAME=$1 ID FILE="$CACHE/vrfs.json"
+
+	if [[ -z $NAME ]] ; then
+		warn "No VRF specified: defaulting to $Vrf"
+		NAME="$Vrf"
+	fi
+	debug "lookup-vrf: $NAME in $FILE"
+	[[ -e $FILE ]] || get-netbox "ipam/vrfs" "" "$FILE"
+	ID=$($JQ ".results[] | select( .name | match(\"$NAME\")) | .id" "$FILE")
+	[[ -n $ID ]] || error "VRF $NAME not found"
+	echo "${ID//$'\r'/}"
+}
+
+################################################################################
+lookup-interface() {
+	local NAME=$1 IFACE=$1 TYPE=${2:-host} ID
+
+	#NAME=$(echo $NAME)
+	[[ -n $NAME && $NAME != null ]] || return 0
+	if [[ $NAME =~ : ]] ; then
+		IFS=":" read -r TYPE IFACE <<<"$NAME"
+	fi
+
+	IFACE="${BRIDGES[$IFACE]:-$IFACE}"
+	debug "lookup-interface: $NAME => $IFACE"
+	if [[ $TYPE = host ]] ; then
+		debug "lookup-interface on host: $IFACE ($NAME)"
+		DEVID=$(lookup-device-id "$HOSTNAME" "check") || error "No $HOSTNAME found"
+		ID="$(get-netbox "dcim/interfaces" "device_id=$DEVID&name=$IFACE" \
+			| "$JQ" '.results[] | .id')"
+	else
+		debug "lookup-interface for vm $HOSTNAME: $IFACE ($NAME)"
+		VMID=$(lookup-vm "$HOSTNAME") || error "No VM $HOSTNAME found"
+		ID="$(get-netbox "virtualization/interfaces" "virtual_machine_id=$VMID&name=$IFACE" \
+			| "$JQ" '.results[] | .id')"
+	fi
+	if [[ -z $ID ]] ; then
+		warn "Interface '$IFACE' on $HOSTNAME not found"
+		return 1
+	fi
+	echo "${ID//$'\r'/}"
+}
+
+################################################################################
+existing-interface() {
+	local IFACE=$1
+	[[ -n $NETBOX && -n $(lookup-interface "$IFACE") ]]
+}
+
+################################################################################
+json-iface() {
+	local IFACE=$1; shift
+	local TYPE=$1; shift
+	local LAG=$1; shift
+	local MTU=$1; shift
+	local MAC=$1; shift
+	local DESC
+	DESC="$(json-description "interface" "$HOSTNAME" "$IFACE")"; shift
+	DEVID=$(lookup-device-id "$HOSTNAME") || return 1
+  	LAG=$(lookup-interface "$LAG") || LAG="\"lag\": $LAG,"
+
+	# shellcheck disable=SC2086,SC2116
+	cat <<ENDJSON
+{
+  "device": $DEVID,
+  "name": "$IFACE",
+  "type": "$TYPE",
+  "enabled": true,
+  $LAG
+  "mtu": ${MTU:-1500},
+  "mac_address": "$MAC",
+  $DESC
+  "tags": [ $(json-tags "$@") ]
+}
+ENDJSON
+}
+
+################################################################################
+good-iface() {
+	local IFACE=$1
+	#debug "good-iface: $*"
+
+	case "$IFACE" in
+		bond*|en*|vlan*|vmbr*) return 0;;
+		@|fwbr*|fmln*|fmpr*|lo|ovs*|tap*|tun*|veth*|wg[0-9]) return 1;;
+	esac
+	return 1
+#
+#	if [[ $IFACE == lo || $IFACE =~ @ || $IFACE =~ ^tap || $IFACE =~ ^tun \
+#		|| $IFACE =~ ^fwbr || $IFACE =~ ^fwln || $IFACE =~ ^fwpr \
+#		|| $IFACE =~ ^ovs || $IFACE =~ ^veth || $IFACE =~ ^wg[0-9] ]] ; then
+#		return 1
+#	fi
+#	return 0
+}
+
+################################################################################
+lookup-iface-ethtool() {
+	local IFACE=$1 LINE SPEED='' PORT="TP"
+
+	#IFACE=$(echo $IFACE)
+	#debug "lookup-iface-ethtool: $IFACE"
+	while read -r LINE ; do
+		#info "ethtool: $LINE"
+		if [[ $LINE =~ "Supported ports:" ]] ; then
+			# shellcheck disable=SC2076
+			if [[ $LINE =~ '[ ]' ]] ; then
+				echo "lag"
+				return
+			elif [[ $LINE =~ FIBRE ]] ; then
+				PORT=SFP
+			elif [[ $LINE =~ TP ]] ; then
+				PORT=TP
+			fi
+		elif [[ $LINE =~ 10000base ]] ; then
+			SPEED=10000
+		elif [[ $LINE =~ 1000base ]] ; then
+			SPEED=1000
+		elif [[ $LINE =~ 100base ]] ; then
+			SPEED=100
+		fi
+	done <<<"$(remote "$ETHTOOL" "$IFACE")"
+
+	if [[ -z ${SPEED:-} ]] ; then
+		warn "lookup-iface-ethtool ($IFACE): invalid interface type"
+		echo "1000base-t 1G"
+		return 0
+	elif [[ $SPEED -eq 100 ]] ; then
+		echo "100base-tx"
+	elif [[ $SPEED -eq 1000 && $PORT = SFP ]] ; then
+		echo "1000base-x-sfp 1G"
+	elif [[ $SPEED -eq 1000 ]] ; then
+		echo "1000base-t 1G"
+	elif [[ $SPEED -eq 10000 && $PORT = SFP ]] ; then
+		echo "10gbase-x-sfpp 10G"
+	elif [[ $SPEED -eq 10000 ]] ; then
+		echo "10gbase-t 10G"
+	else
+		error "lookup-iface-ethtool ($IFACE): can't determine interface type"
+	fi
+}
+
+################################################################################
+lookup-iface-type() {
+	local IFACE=$1 SPEED TAGS
+	debug "lookup-iface-type: $*"
+
+	#IFACE=$(echo $IFACE)
+	#debug "lookup-iface-type: $IFACE"
+	if [[ -n ${IFACETYPE[$IFACE]:-} ]] ; then
+		echo "${IFACETYPE[$IFACE]}"
+	elif [[ $IFACE =~ ^bond ]] ; then
+		SPEED="$(remote "$ETHTOOL" "$IFACE" | awk '/Speed:/ {print $2}' | sed 's/Mb.*$//')"
+		case "$SPEED" in
+			1000|2000) TAGS="1G";;
+			10000|20000) TAGS="10G";;
+		esac
+		echo "lag ${TAGS:-} LAG"
+	elif [[ $IFACE =~ ^vlan ]] ; then
+		echo "virtual VLAN"
+	elif remote test -f $ETHTOOL ; then
+		lookup-iface-ethtool "$IFACE"
+	else
+		echo "virtual"
+	fi
+}
+
+################################################################################
+add-iface() {
+	if [[ -n $EXPORT ]] ; then
+		export-csv "interface" "$HOSTNAME" "$@"
+		return 0
+	fi
+	debug "add-iface: $*"
+
+	local IFACE=$1; shift
+	local TYPE=$1; shift
+	local LAG=$1; shift
+	local MTU=$1; shift
+	local MAC=$1; shift
+	local TAGS="$*" J
+
+	if [[ -n $JSON ]] ; then
+		if existing-interface "$IFACE" ; then
+			warn "$IFACE on $HOSTNAME already added"
+			[[ -n $UPDATE ]] || return 0
+		fi
+
+		# shellcheck disable=SC2086
+		J="$(json-iface "$IFACE" "$TYPE" "$LAG" "$MTU" "$MAC" "" $TAGS)" || return 1
+		post-netbox "$IFACE" "dcim/interfaces" "$J"
+	else
+		echo "* IFACE $IFACE: $TYPE${LAG:+ LAG:$LAG} $MTU $MAC $TAGS"
+	fi
+}
+
+################################################################################
+lookup-vm() {
+	local NAME ID FILE="$CACHE/vms.json"
+	NAME=$(get-name "$1")
+
+	debug "lookup-vm: $NAME in $FILE"
+	[[ -e $FILE ]] || get-netbox "virtualization/virtual-machines" "" "$FILE"
+	ID=$($JQ ".results[] | select( .name | match(\"$NAME\")) | .id" "$FILE")
+	if [[ -z $ID ]] ; then
+		warn "VM $NAME not found"
+		return 1
+	fi
+	echo "${ID//$'\r'/}"
+}
+
+################################################################################
+#existing-virt-interface() {
+#	local IFACE=$1
+#	[[ -n $NETBOX && -n $(lookup-interface "$IFACE" "$VIRTUAL") ]]
+#}
+
+################################################################################
+json-virt-iface() {
+	local IFACE=$1; shift
+	local MTU=$1; shift
+	local MAC=$1; shift
+	local DESC VMID
+	DESC="$(json-description "interface" "$HOSTNAME" "$IFACE")"; shift
+	VMID=$(lookup-vm "$HOSTNAME") || return 1
+
+	# shellcheck disable=SC2086,SC2116
+	cat <<ENDJSON
+{
+  "virtual_machine": $VMID,
+  "name": "$IFACE",
+  "type": "virtual",
+  "enabled": true,
+  "mtu": $MTU,
+  "mac_address": "$MAC",
+  $DESC
+  "tags": [ $(json-tags "$@") ]
+}
+ENDJSON
+}
+
+################################################################################
+add-virt-iface() {
+	if [[ -n $EXPORT ]] ; then
+		export-csv "virt-interface" "$HOSTNAME" "$@"
+		return 0
+	fi
+
+	local IFACE=$1; shift
+	local MTU=$1; shift
+	local MAC=$1; shift
+	local TAGS="$*" J
+
+	if [[ -n $JSON ]] ; then
+		local ID
+		# shellcheck disable=SC2086
+		J="$(json-virt-iface "$IFACE" "$MTU" "$MAC" "" $TAGS)" || return 1
+		if ID=$(lookup-interface "$IFACE" "$VIRTUAL") ; then
+			warn "Virtual $HOSTNAME already has a $IFACE interface"
+			[[ -n $DEBUG ]] || return 0
+			put-netbox "$IFACE on virtual $HOSTNAME" "virtualization/interfaces/$ID" "$J"
+		else
+			post-netbox "$IFACE to $HOSTNAME" "virtualization/interfaces" "$J"
+		fi
+	else
+		# shellcheck disable=SC2086
+		echo "* VIRT-IFACE $IFACE:" "$MTU" "$MAC" $TAGS
+	fi
+}
+
+################################################################################
+lookup-ip() {
+	local CIDR=$1 CHECK=${2:-} MULTIPLE=${3:-} QUERY ID LIST=
+	[[ -n $CIDR ]] || return 1
+
+	#CIDR=$(echo $CIDR)
+	check-token
+	debug "lookup-ip $CIDR"
+	if [[ $CIDR = all ]] ; then
+		local DEVID VMID
+		if DEVID=$(lookup-device-id "$HOSTNAME" "check") ; then
+			QUERY="device_id=$DEVID"
+		elif VMID=$(lookup-vm "$HOSTNAME" "check") ; then
+			QUERY="virtual_machine_id=$VMID"
+		else
+			warn "$HOSTNAME not found when looking for IPs"
+			return 1
+		fi
+	else
+		QUERY="address=${CIDR/\//%2F}"
+	fi
+	ID="$(get-netbox "ipam/ip-addresses" "$QUERY" \
+		| "$JQ" '.results[] | .id')"
+	if [[ -z $ID ]] ; then
+		[[ -n $CHECK ]] || warn "IP '$CIDR' on $HOSTNAME not found"
+		return 1
+	fi
+	# shellcheck disable=SC2001,SC2086
+	LIST=$(echo $ID | sed 's/ /,/g')
+	if [[ $LIST =~ , && -z $MULTIPLE ]] ; then
+		error "Found multiple IPs for $HOSTNAME"
+	fi
+	echo "$LIST"
+}
+
+################################################################################
+lookup-ips() {
+	local IP IPOUTPUT=''
+	for IP in "$@" ; do
+		IPOUTPUT+="$(lookup-ip "$IP" "" "multiple"),"
+	done
+	echo "${IPOUTPUT%,}"
+}
+
+################################################################################
+get-vrf() {
+	echo "$Vrf"
+}
+
+################################################################################
+json-ip-address() {
+	local ADDR=$1; shift
+	local IFACE=$1; shift
+	local VRF DESC TAGS
+	DESC="$(json-description "ip" "$HOSTNAME" "$ADDR")"; shift
+	VRF="$(get-vrf)"
+	debug "json-ip-address $IFACE => $ADDR"
+
+	# shellcheck disable=SC2086,SC2116
+	cat <<ENDJSON
+{
+  "address": "$ADDR",
+  "vrf": $(lookup-vrf "$VRF"),
+  "tenant": $(lookup-tenant "$Tenant"),
+  "status": "active",
+  "role": null,
+  "interface": $(lookup-interface "$IFACE"),
+  "dns_name": "$(lookup-fqdn "$ADDR")",
+  $DESC
+  "tags": [ $(json-tags "$@") ]
+}
+ENDJSON
+}
+
+################################################################################
+good-ip() {
+	local IP=$1
+	#debug "good-ip: $IP"
+	if [[ $IP =~ ^127\. || $IP =~ ^169\.254 \
+		|| $IP =~ ::1/128 || $IP =~ ^fe80 ]] ; then
+		return 1
+	fi
+	return 0
+}
+
+################################################################################
+add-ip() {
+	local IP=$1 IFACE=$2 J
+	debug "add-ip: $*"
+
+	if [[ -n $EXPORT ]] ; then
+		export-csv "ip" "$HOSTNAME" "$@"
+		return 0
+	fi
+
+	if [[ -n $JSON ]] ; then
+		local ID
+		shift; shift
+		J="$(json-ip-address "$IP" "$IFACE" "" "$@")"
+		if ID=$(lookup-ip "$IP" "check") ; then
+			warn "IP $IP already added to $HOSTNAME on $IFACE"
+			put-netbox "$IP to $HOSTNAME on $IFACE" "ipam/ip-addresses/$ID" "$J"
+		else
+			post-netbox "$IP to $HOSTNAME on $IFACE" "ipam/ip-addresses" "$J"
+		fi
+	else
+		# shellcheck disable=SC2145
+		echo "* ${@: -1} $*"
+	fi
+}
+
+################################################################################
+declare -A INBOND
+get-bonds() {
+	local BONDING=/proc/net/bonding BOND IFACE IF
+	# shellcheck disable=SC2044
+	for BOND in $(remote-find "$BONDING" -mindepth 1) ; do
+		# shellcheck disable=SC2013
+		for IFACE in $(awk '/^Slave Interface:/ {print $3}' <<<"$(remote-cat "$BOND")") ; do
+			#info "$IFACE in $BOND"
+			INBOND[$IFACE]="${BOND##*/}"
+		done
+	done
+}
+
+################################################################################
+declare -A BRIDGES
+get-bridges() {
+	local LINE IF BR
+	while read -r LINE ; do
+		[[ -n $LINE ]] || continue
+		read -r IF BR <<<"$(sed -re 's/^[0-9]*: ([a-z0-9-]+).*master ([a-z0-9-]+) .*$/\1\t\2/' <<<"$LINE")"
+		if good-iface "$IF" ; then
+			BRIDGES[$BR]="${INBOND[$IF]:-$IF}"
+			debug "get-bridges: BRIDGES[$BR] => ${BRIDGES[$BR]}"
+		fi
+	done <<<"$(remote $BRIDGE link)"
+}
+
+################################################################################
+get-ovs() {
+	local LINE BR IF
+	while read -r LINE ; do
+		#info "get-ovs: $LINE"
+		if [[ $LINE =~ Bridge ]] ; then
+			BR="$(awk -F\" '{print $2}' <<<"$LINE")"
+		elif [[ $LINE =~ Port.*bond ]] ; then
+			IF="$(cut -d\" -f2 <<<"$LINE")"
+			BRIDGES[$BR]="$IF"
+			debug "get-ovs: BRIDGES[$BR] => ${BRIDGES[$BR]}"
+			return 0
+		elif [[ $LINE =~ Interface.*en ]] ; then
+			IF="$(cut -d\" -f2 <<<"$LINE")"
+			if [[ -n $IF && $IF != "$BR" ]] && good-iface "$IF" ; then
+				BRIDGES[$BR]="${INBOND[${IF:-}]:-$IF}"
+				debug "get-ovs: BRIDGES[$BR] => ${BRIDGES[$BR]}"
+				return 0
+			fi
+		fi
+	done <<<"$(remote $OVSCTL show)"
+}
+
+################################################################################
+only-ip() {
+	local IPOPTS=$1 LINE IP #ONLYIP=''
+
+	# shellcheck disable=SC2086
+	while read -r LINE ; do
+		if [[ $LINE =~ inet ]] ; then
+			IP="$(awk '{print $2}' <<<"$LINE")"
+			good-ip "$IP" || continue
+			echo "$IP"
+			return 0
+			#[[ -z $ONLYIP ]] || return 0
+			#ONLYIP="$IP"
+		fi
+	done <<<"$(remote "$IPROUTE" $IPOPTS addr)"
+	echo ''
+	#echo "$ONLYIP"
+}
+
+################################################################################
+declare -A INTERFACES IPS
+get-ips() {
+	if is-os "Darwin" ; then
+		get-darwin-ip
+		return
+	fi
+
+	local IPOUTPUT LINE IF MTU IFACE='' MAC IP
+	get-bonds
+	get-bridges
+	get-ovs
+	debug "get-ips: $*"
+
+	# shellcheck disable=SC2086
+	IPOUTPUT="$(remote "$IPROUTE" $IPOPTS addr)"
+	while read -r LINE ; do
+		if [[ $LINE =~ ^[0-9]*: ]] ; then
+			read -r IF MTU <<<"$(sed -re 's/^[0-9]*: ([a-z0-9-]+).*mtu ([0-9]+) .*$/\1\t\2/' <<<"$LINE")"
+			IFACE="${BRIDGES[$IF]:-$IF}"
+			#good-iface "$IFACE" || continue
+			debug "get-ips: {$IF => $IFACE} {$MTU}"
+		elif ! good-iface "$IFACE" ; then
+			continue
+		elif [[ $LINE =~ link/ether ]] ; then
+			[[ -z ${INTERFACES[$IFACE]:-} ]] || continue
+			[[ ! $IFACE =~ vmbr ]] || continue
+			MAC="$(awk '{print $2}' <<<"$LINE")"
+			INTERFACES[$IFACE]="$MAC $MTU"
+		elif [[ $LINE =~ inet6 ]] ; then
+			IP="$(awk '{print $2}' <<<"$LINE")"
+			good-ip "$IP" || continue
+			debug "$IFACE => $IP"
+			IPS[$IP]="add-ip $IP $VIRTUAL:$IFACE IPv6"
+			is-native || IPS[$IP]+=" ${VIRTUAL^^*}"
+		elif [[ $LINE =~ inet ]] ; then
+			IP="$(awk '{print $2}' <<<"$LINE")"
+			good-ip "$IP" || continue
+			IPS[$IP]="add-ip $IP $VIRTUAL:$IFACE IPv4"
+			is-native || IPS[$IP]+=" ${VIRTUAL^^*}"
+		fi
+	done <<<"$IPOUTPUT"
+
+	replay-ifaces
+	replay-ips
+	replay-vms
+}
+
+################################################################################
+# Remake all the VMs now interfaces and IPs have been added
+replay-ifaces() {
+	local IFACES IFACE TYPE LAG TAGS=
+	debug "Replay Interfaces"
+	mapfile -d '' IFACES < <(printf '%s\0' "${!INTERFACES[@]}" | sort -z)
+	for IFACE in "${IFACES[@]}" ; do
+		[[ -n $IFACE ]] || continue
+		debug "replay-ifaces: $IFACE => ${INTERFACES[$IFACE]}"
+		#info "Update Interface $IFACE"
+		IFS=' ' read -r MAC MTU <<<"${INTERFACES[$IFACE]}"
+
+		if is-os "Darwin" ; then
+			add-darwin-iface "$IFACE" "$MAC" "$MTU"
+		elif is-native ; then
+			debug "add-iface $IFACE"
+			[[ ! $IFACE =~ vmbr ]] || error "Bridge error for $IFACE"
+			IFS=' ' read -r TYPE TAGS <<<"$(lookup-iface-type "$IFACE")"
+			LAG="${INBOND[$IFACE]:-}"
+			[[ -z $LAG ]] || TAGS+=" LAG"
+			add-iface "$IFACE" "$TYPE" "${LAG:-null}" "$MTU" "$MAC" "$TAGS"
+		else
+			debug "add-virt-iface $IFACE"
+			add-virt-iface "$IFACE" "$MTU" "$MAC" "$TAGS" "${VIRTUAL^^*}"
+		fi
+	done
+}
+
+################################################################################
+# Remake all the VMs now interfaces and IPs have been added
+replay-ips() {
+	local KEYS KEY
+	debug "Replay IPs"
+	mapfile -d '' KEYS < <(printf '%s\0' "${!IPS[@]}" | sort -z)
+	for KEY in "${KEYS[@]}" ; do
+		[[ -n $KEY ]] || continue
+		debug "Update IP $KEY -> ${IPS[$KEY]}"
+		eval "${IPS[$KEY]}"
+	done
+}
+
+################################################################################
+# Remake all the VMs now interfaces and IPs have been added
+replay-vms() {
+	local KEYS KEY
+	debug "Update VMs"
+	mapfile -d '' KEYS < <(printf '%s\0' "${!VMS[@]}" | sort -z)
+	for KEY in "${KEYS[@]}" ; do
+		[[ -n $KEY ]] || continue
+		info "Update Virtual $KEY => ${VMS[$KEY]}"
+		eval "${VMS[$KEY]}"
+	done
+}
+
+################################################################################
+get-servicename() {
+	local PORT=$1 SERVICE
+	SERVICE="${SERVICENAME[$PORT]:-$($GETENT services "$PORT" | awk '{print $1}')}"
+	[[ -n $SERVICE ]] || warn "No name for $PORT. Specify SERVICE[$PORT] in config file"
+	echo "$SERVICE"
+}
+
+################################################################################
+json-service() {
+	debug "json-service for $HOSTNAME: $*"
+	local PORT=$1; shift
+	local PROTO=$1; shift
+	local IP=$1; shift
+	local DEVID='' VMID='' ADDRESS NAME IPADDRS='' DESC
+	# shellcheck disable=SC2086,SC2116
+	if DEVID=$(lookup-device-id "$HOSTNAME" "check") ; then
+		ADDRESS="\"device\": $DEVID"
+	elif VMID=$(lookup-vm "$HOSTNAME" "check") ; then
+		ADDRESS="\"virtual_machine\": $VMID"
+	else
+		warn "$HOSTNAME not found when adding for service"
+		return 1
+	fi
+	NAME="$(get-servicename "$PORT")"
+	if [[ $IP = all ]] ; then
+		[[ -z $UPDATE ]] || IPADDRS="\"ipaddresses\": [ ],"
+	else
+		IPADDRS="\"ipaddresses\": [ $(lookup-ips "$IP") ],"
+	fi
+	DESC="$(json-description "service" "$HOSTNAME" "$NAME")"; shift
+
+	# shellcheck disable=SC2086,SC2116
+	cat <<ENDJSON
+{
+  $ADDRESS,
+  "name": "$NAME",
+  "port": $PORT,
+  "protocol": "${PROTO,,*}",
+  $IPADDRS
+  $DESC
+  "tags": [ $(json-tags "${NAME^^*}" "$@") ]
+}
+ENDJSON
+}
+
+################################################################################
+lookup-service() {
+	local NAME=$1 PORT=$2 CHECK=${3:-} QUERY DEVID VMID ID
+	[[ -n $PORT ]] || return 1
+	debug "lookup-service for $HOSTNAME:" "$@"
+
+	#NAME=$(echo $NAME)
+	check-token
+	if DEVID=$(lookup-device-id "$NAME" "check") ; then
+		QUERY="device_id=$DEVID"
+	elif VMID=$(lookup-vm "$NAME" "check") ; then
+		QUERY="virtual_machine_id=$VMID"
+	else
+		warn "$NAME not found when looking for Services"
+		return 1
+	fi
+	ID="$(get-netbox "ipam/services" "$QUERY&port=$PORT" \
+		| "$JQ" '.results[] | .id')"
+	if [[ -z $ID ]] ; then
+		[[ -n $CHECK ]] || warn "Service '$PORT' on $NAME not found"
+		return 1
+	fi
+	echo "${ID//$'\r'/}"
+}
+
+################################################################################
+add-service() {
+	if [[ -n $EXPORT ]] ; then
+		export-csv "service" "$HOSTNAME" "$@"
+		return 0
+	fi
+
+	debug "add-service for $HOSTNAME:" "$@"
+	local PORT=$1; shift
+	local PROTO=$1; shift
+	local IP=$1; shift
+	local TAGS=$1; shift
+	local J
+
+	if [[ -n $JSON ]] ; then
+		local ID
+		# shellcheck disable=SC2086
+		J="$(json-service "$PORT" "$PROTO" "$IP" "" $TAGS)" || return 1
+		if ID=$(lookup-service "$HOSTNAME" "$PORT" "check") ; then
+			warn "Port $PORT already added to $HOSTNAME"
+			put-netbox "$PORT on $HOSTNAME" "ipam/services/$ID" "$J"
+		else
+
+			post-netbox "$PORT to $HOSTNAME" "ipam/services" "$J"
+		fi
+	else
+		local NAME
+		NAME="$(get-servicename "$PORT")"
+		# shellcheck disable=SC2086
+		echo "* SERVICE $NAME ($PORT):" "$PROTO" "$IP" $TAGS
+	fi
+}
+
+################################################################################
+declare -A SERVICE
+get-services() {
+	local HNAME PORTS LINE NAME TYPE PROTO SERV IP PORT TAG ADDRS TAGS
+	HNAME=$(get-name "$HOSTNAME")
+	debug "get-services: $*"
+
+	debug "get-services for $HOSTNAME"
+	# shellcheck disable=SC2086
+	PORTS="$(remote "$LSOF" -Pni)"
+	while read -r LINE ; do
+		if [[ $LINE =~ '->' || $LINE =~ 127\.0\.0 || $LINE =~ \[::1\] || $LINE =~ stunnel ]] ; then
+			continue
+		elif [[ $LINE =~ LISTEN ]] ; then
+			#debug "get-services: $LINE"
+			read -r NAME TYPE PROTO SERV <<<"$(awk '{print $1" "$5" "$8" "$9}' <<<"$LINE")"
+			#info "$NAME"
+			if [[ -n ${IGNORESERVICE[$HNAME-$NAME]:-${IGNORESERVICE[$NAME]:-}} ]] ; then
+				TAGS+="${NAME^^*} "
+				continue
+			fi
+			IP="${SERV%:*}"
+			PORT="${SERV##*:}"
+			[[ $IP != "$PORT" ]] || error "Couldn't parse IP/PORT from $SERV"
+			#info "$HNAME-$PORT => ${IGNORESERVICE[$HOST-$PORT]:-}"
+			[[ -z ${IGNORESERVICE[$HNAME-$PORT]:-${IGNORESERVICE[$PORT]:-}} ]] || continue
+			[[ $PORT -ge 32768 ]] || SERVICE[$PORT:${PROTO,,*}]+="$TYPE:${IP/*/all} "
+		fi
+	done <<<"$PORTS"
+	# shellcheck disable=SC2046,SC2086
+	[[ -z ${TAGS:-} ]] || add-tag "$HOSTNAME" $(uniq-list $TAGS)
+	for SERV in "${!SERVICE[@]}" ; do
+		IFS=: read -r PORT PROTO <<<"$SERV"
+		ADDRS=
+		TAGS=
+		for LINE in ${SERVICE[$SERV]} ; do
+			IFS=: read -r TAG IP <<<"$LINE"
+			ADDRS+="$IP "
+			TAGS+="$TAG "
+		done
+		# shellcheck disable=SC2086
+		add-service "$PORT" "$PROTO" "$(uniq-list $ADDRS)" "$(uniq-list $TAGS)"
+	done
+}
+
+################################################################################
+get-peer() {
+	local NAME=$1 PORT=$2 DESC=$3
+
+	NAME=$(get-name "$NAME")
+	if [[ $NAME =~ [0-9] ]] ; then
+		PORT=$(sed -r 's/^[a-zA-Z]+//' <<<"$PORT")
+	fi
+
+	echo "$NAME $PORT $DESC"
+}
+
+################################################################################
+get-lldp() {
+	local NEIGHBORS="$1"
+
+	debug "get-lldp for $HOSTNAME"
+	#NEIGHBORS="$(remote "$LLDP" show neighbors)"
+	local IFACE MYMAC THEM BANK PORT DESC
+	while read -r LINE ; do
+		#info "$LINE"
+		if [[ $LINE =~ ^Interface ]] ; then
+			IFACE="$(sed 's/^Interface: *//; s/,.*$//' <<<"$LINE")"
+		elif [[ $LINE =~ ChassisID: ]] ; then
+			MYMAC=$(awk '{print $3}' <<<"$LINE")
+		elif [[ $LINE =~ SysName: ]] ; then
+			THEM=$(awk '{print $2}' <<<"$LINE")
+		elif [[ $LINE =~ PortID: ]] ; then
+			PORT=$(awk '{print $3}' <<<"$LINE")
+			BANK=${PORT%/*}
+			PORT=${PORT##*/}
+		elif [[ $LINE =~ PortDescr: ]] ; then
+			DESC=$(awk '{print $2}' <<<"$LINE")
+		elif [[ $LINE =~ TTL: ]] ; then
+			if [[ ! ${THEM:-} =~ $HOSTNAME ]] ; then
+				read -r THEM PORT DESC <<<"$(get-peer "${THEM:-${BANK:-}}" "$PORT" "${DESC:-}")"
+				info "IFACE: $HOSTNAME $IFACE($MYMAC) -> $THEM $PORT $DESC"
+				unset IFACE MYMAC THEM PORT DESC
+			fi
+		fi
+	done <<<"$NEIGHBORS"
+}
+
+################################################################################
+get-neighbors() {
+	local NEIGHBORS IFACE MYMAC THEM PORT DESC
+
+	debug "get-neighbors for $HOSTNAME"
+	# shellcheck disable=SC2086
+	NEIGHBORS="$(remote "$LLDP" show neighbors)"
+	if [[ -n $NEIGHBORS ]] ; then
+		get-lldp "$NEIGHBORS"
+	fi
+}
+
+################################################################################
+get-system-profiler() {
+	local SYSFILE
+	SYSFILE="$CACHE/$HOSTNAME-system-profiler.txt.xz"
+	if [[ -n $NOCACHE || ! -e $SYSFILE ]] ; then
+		info "Getting system profile of $HOSTNAME"
+		remote "$SYSTEMPROFILER" | xz -9c >"$SYSFILE"
+		unset NOCACHE
+	fi
+
+	echo "$SYSFILE"
+}
+
+################################################################################
+get-darwin-system() {
+	local SYSFILE
+	SYSFILE="$(get-system-profiler)"
+
+	local LINE NAME ID CPU SPEED CORES MEMORY SN UUID
+	while read -r LINE ; do
+		if [[ $LINE =~ ^\ *Model\ Name:\  ]] ; then
+			debug "get-darwin-system: $LINE"
+			NAME="$(sed -r 's/^ *Model Name: *//' <<<"$LINE")"
+		elif [[ $LINE =~ ^\ *Model\ Identifier:\  ]] ; then
+			debug "get-darwin-system: $LINE"
+			ID="$(sed -r 's/^ *Model Identifier: *//' <<<"$LINE")"
+		elif [[ $LINE =~ ^\ *Processor\ Name:\  ]] ; then
+			debug "get-darwin-system: $LINE"
+			CPU="$(sed -r 's/^ *Processor Name: *//' <<<"$LINE")"
+		elif [[ $LINE =~ ^\ *Processor\ Speed:\  ]] ; then
+			debug "get-darwin-system: $LINE"
+			SPEED="$(sed -r 's/^ *Processor Speed: *//' <<<"$LINE")"
+		elif [[ $LINE =~ ^\ *Total\ Number\ of\ Cores:\  ]] ; then
+			debug "get-darwin-system: $LINE"
+			CORES="$(sed -r 's/^ *Total Number of Cores: *//' <<<"$LINE")"
+		elif [[ $LINE =~ ^\ *Memory:\  ]] ; then
+			debug "get-darwin-system: $LINE"
+			MEMORY="$(sed -r 's/^ *Memory: *//' <<<"$LINE")"
+		elif [[ $LINE =~ ^\ *Serial\ Number\ .system.:\  ]] ; then
+			debug "get-darwin-system: $LINE"
+			SN="$(sed -r 's/^ *Serial Number .system.: *//' <<<"$LINE")"
+		elif [[ $LINE =~ ^\ *Hardware\ UUID:\  ]] ; then
+			debug "get-darwin-system: $LINE"
+			UUID="$(sed -r 's/^ *Hardware UUID: *//' <<<"$LINE")"
+			info "$HOSTNAME: $NAME $ID $CPU $SPEED $CORES $MEMORY $SN $UUID"
+		fi
+	done <<<"$(xzcat "$SYSFILE")"
+}
+
+################################################################################
+add-darwin-iface() {
+	local IFACE=$1 MAC=$2 TAGS=${3:-}
+	local IPOUTPUT LINE TYPE MTU
+	debug "add-darwin-iface: $*"
+
+	if [[ $TAGS =~ Wifi ]] ; then
+		TYPE="ieee802.11ac"
+	fi
+
+	IPOUTPUT="$(remote "ifconfig" "$IFACE")"
+	while read -r LINE ; do
+		if [[ $LINE =~ mtu ]] ; then
+			#MTU="$(sed -e 's/^.*mtu //' <<<"$LINE")"
+			MTU="${LINE/^.*mtu /}"
+		elif [[ $LINE =~ media.*1000baseT ]] ; then
+			TYPE="1000base-t"
+			TAGS+=" 1G"
+		fi
+	done <<<"$IPOUTPUT"
+
+	if [[ -n ${TYPE:-} ]] ; then
+		# shellcheck disable=SC2086
+		add-iface "$IFACE" "$TYPE" "null" "$MTU" "$MAC" $TAGS
+	else
+		warn "No TYPE found for $IFACE"
+	fi
+}
+
+################################################################################
+get-darwin-ip() {
+	local SYSFILE DATA LINE TYPE IFACE ADDR MAC
+	SYSFILE="$(get-system-profiler)"
+
+	DATA="$(xzcat "$SYSFILE" | sed 's/\r//g')"
+	while read -r LINE ; do
+		#info "$LINE"
+		#if [[ $LINE =~ MAC ]] ; then echo $LINE | hd ; fi
+		#echo "$LINE" >&2
+		if [[ $LINE =~ ^\ *Type: ]] ; then
+			TYPE="$(sed -r 's/^.*: *//' <<<"$LINE")"
+			case "$TYPE" in
+				AirPort|IEEE80211) TYPE="Wifi";;
+			esac
+			debug "get-darwin-ip: TYPE => $TYPE ($LINE)"
+		elif [[ $LINE =~ BSD\ Device\ Name: ]] ; then
+			IFACE="$(sed -r 's/^.*: *//' <<<"$LINE")"
+			debug "get-darwin-ip: IFACE => $IFACE ($LINE)"
+		elif [[ -n ${IFACE:-} && $LINE =~ ^\ *Addresses: ]] ; then
+			ADDR="$(sed -r 's/^.*: *//' <<<"$LINE")"
+			debug "get-darwin-ip: ADDR => $ADDR ($LINE)"
+			#add-ip "$ADDR" "$IFACE" IPv4 || true
+			IPS[$ADDR]="add-ip $ADDR host:$IFACE IPv4"
+			#ADDR=
+		elif [[ -n ${IFACE:-} && $LINE =~ MAC.*Address: ]] ; then
+			MAC="$(sed -r 's/^.*Address: *//' <<<"$LINE")"
+			debug "get-darwin-ip: MAC => $MAC ($LINE)"
+			#add-darwin-iface "$IFACE" "$MAC" "$TYPE" || true
+			[[ $IFACE =~ bridge || $IFACE =~ ^fw || $TYPE =~ autofs ]] || INTERFACES[$IFACE]="$MAC $TYPE"
+		#elif [[ $LINE =~ ^\ *Media\ Subtype:\  ]] ; then
+		#	debug "get-darwin-ip: $LINE"
+		##	MEDIA="$(sed -r 's/^ *Media Subtype: *//' <<<"$LINE")"
+		#elif [[ $LINE =~ ^\ *Service\ Order:\  ]] ; then
+		#	debug "get-darwin-ip: $LINE"
+		#	#add-iface "$IFACE" "$TYPE" "null" "$MTU" "$MAC" "$TAGS" || return 0
+		#	add-darwin-iface "$IFACE" "$MAC" || true
+		#	add-ip "$ADDR" "$IFACE" IPv4 || true
+			#TYPE=
+			#MAC=
+		fi
+	done <<<"$DATA"
+
+	replay-ifaces
+	replay-ips
+}
+
+################################################################################
+run-on-hostname() {
+	info "get-hw ${REMOTE:+--via ${VIAHOST:-$HOSTNAME}} --remote $*"
+
+	([[ -z $VERBOSE ]] || set -x; $0 ${DEBUG:+--debug} ${VERBOSE:+--verbose} \
+	${EXPORT:+--export} ${JSON:+--netbox} ${LONG:+--long} ${TEST:+--test} \
+	${UPDATE:+--update} ${USERNAME:+--user $USERNAME} \
+	${REMOTE:+--via ${VIAHOST:-$HOSTNAME}} \
+	--remote "$@")
+}
+
+################################################################################
+proxmox-node-list() {
+	local NODES
+	NODES="$(remote "$PVECM" nodes 2>/dev/null | awk '/[0-9]/ {print $3}')"
+	[[ -n $NODES ]] || NODES="$(remote /bin/hostname)"
+	debug "proxmox-node-list: $NODES"
+	echo "$NODES"
+}
+
+################################################################################
+proxmox-all() {
+	debug "proxmox-all VIA:$VIAHOST HOSTNAME:$HOSTNAME $*"
+	local NODE
+	for NODE in $(proxmox-node-list) ; do
+		NODE="$(get-hostname "$NODE")"
+		run-on-hostname "$NODE" "$@" || echo "exited with $?"
+		run-on-hostname "$NODE" proxmox-kvm "$@" || echo "exited with $?"
+		run-on-hostname "$NODE" proxmox-lxc "$@" || echo "exited with $?"
+	done
+}
+
+################################################################################
+proxmox-nodes() {
+	debug "proxmox-nodes: $*"
+	local NODE
+	for NODE in $(proxmox-node-list) ; do
+		run-on-hostname "$(get-hostname "$NODE")" "$@" || echo "exited with $?"
+	done
+}
+
+################################################################################
+proxmox-kvm-list() {
+	remote "$PVEKVM" list | awk '/[0-9].*running/ {print $2}'
+}
+
+################################################################################
+proxmox-kvm() {
+	debug "proxmox-kvm: $*"
+	local KVM
+	for KVM in $(proxmox-kvm-list) ; do
+		run-on-hostname "$(get-hostname "$KVM")" "$@" || echo "exited with $?"
+	done
+}
+
+################################################################################
+proxmox-lxc-list() {
+	remote "$PVELXC" list | awk '/[0-9].*running / {print $3}'
+}
+
+################################################################################
+proxmox-lxc() {
+	debug "proxmox-lxc: $*"
+	local LXC
+	for LXC in $(proxmox-lxc-list) ; do
+		run-on-hostname "$(get-hostname "$LXC")" "$@" || echo "exited with $?"
+	done
+}
+
+################################################################################
+investigate-devices() {
+	local D
+	# shellcheck disable=SC2068
+	for D in $(uniq-list ${!INVESTIGATE[@]}) ; do
+		if [[ -n $ONLY ]] ; then
+			[[ ${INVESTIGATE[$D]} = "$ONLY" ]] || continue
+		fi
+		run-on-hostname "$D" "$@" || echo "exited with $?"
+	done
+}
+
+################################################################################
+get-system-cfg() {
+	local SYSFILE
+	SYSFILE="$CACHE/$HOSTNAME-system-cfg.xz"
+	if [[ -n $NOCACHE || ! -e $SYSFILE ]] ; then
+		info "Getting system config of $HOSTNAME"
+		remote-cat "/tmp/system.cfg" | xz -9c >"$SYSFILE"
+		unset NOCACHE
+	fi
+
+	echo "$SYSFILE"
+}
+
+################################################################################
+lookup-switch-port() {
+	local DEVICE PORT=${2:-} ID NAME
+	DEVICE=$(get-name "$1")
+	
+	debug "lookup-switch-port: $PORT on $DEVICE"
+	ID="$(lookup-device-id "$DEVICE")"
+	NAME="$(get-netbox "dcim/interfaces" "device_id=$ID&name=$PORT" \
+		| "$JQ" '.results[] | .description')"
+	if [[ -z $NAME ]] ; then
+		warn "Port $PORT not found on $DEVICE"
+		return 1
+	fi
+	# shellcheck disable=SC2001
+	echo "${NAME//$'\r'/}" | sed -e 's/"//g'
+}
+
+################################################################################
+vyos-show() {
+	remote /bin/vbash -ic "show $*"
+}
+
+################################################################################
+get-vyos-interfaces() {
+	vyos-show "interfaces"
+}
+
+################################################################################
+get-vyos-version() {
+	vyos-show "version"
+}
+
+################################################################################
+get-switch-vyos() {
+	local DATA="${1:-}"
+	[[ -n $DATA ]] || DATA="$(get-vyos-interfaces)"
+	local LINE IFACE IP STATUS DESC LOOKUP
+	debug "get-switch-vyos"
+
+	while read -r LINE ; do
+		#info "$LINE"
+		if [[ $LINE =~ ^eth[0-9] ]] ; then
+			# shellcheck disable=SC2024
+			read -r IFACE IP STATUS DESC <<<"$LINE"
+			STATUS=$STATUS
+			#info "$IFACE -> $IP"
+			if [[ $IFACE = "${IFACE%%.*}" ]] ; then
+				LOOKUP="$(lookup-switch-port "$HOSTNAME" "$IFACE")"
+				info "* $IFACE: $DESC ($IP) => $LOOKUP"
+				if [[ -n $DESC && -n $LOOKUP && ! $LOOKUP =~ $DESC ]] ; then
+					warn "get-switch $HOSTNAME $IFACE: $DESC != $LOOKUP"
+				fi
+			fi
+		fi
+	done <<<"$DATA"
+}
+
+################################################################################
+get-switch-unifi() {
+	local SYSFILE DATA LINE PORT NAME LAG LOOKUP
+	SYSFILE="$(get-system-cfg)"
+	debug "get-switch-unifi: $*"
+
+	DATA="$(xzcat "$SYSFILE" | sed 's/\r//g')"
+	while read -r LINE ; do
+		#info "$LINE"
+		if [[ $LINE =~ switch\.port.*name= ]] ; then
+			PORT="$(sed 's/^switch\.port\.//; s/\..*$//' <<<"$LINE")"
+			#NAME="$(sed 's/^.*=//' <<<"$LINE")"
+			NAME="${LINE/^.*=/}"
+		elif [[ $LINE =~ switch\.port.*lag= ]] ; then
+			#LAG="$(sed 's/^.*=//' <<<"$LINE")"
+			LAG="${LINE/^.*=/}"
+		elif [[ $LINE =~ switch\.port.*port-security= ]] ; then
+			LOOKUP="$(lookup-switch-port "$HOSTNAME" "port$PORT")"
+			#LOOKUP="${LOOKUP//\"/}"
+			info "* Port $PORT: $NAME ${LAG:+LAG $LAG} => $LOOKUP"
+			if [[ -n $LOOKUP && ! $LOOKUP =~ $NAME ]] ; then
+				warn "get-switch $HOSTNAME port$PORT: $NAME != $LOOKUP"
+			fi
+			LAG=
+		fi
+	done <<<"$DATA"
+}
+
+################################################################################
+get-switch() {
+	local DATA
+	debug "get-switch: $*"
+	if remote-exists "/tmp/system.cfg" ; then
+		get-switch-unifi "$@"
+	elif DATA="$(get-vyos-interfaces)" ; then
+		get-switch-vyos "$DATA"
+	else
+		error "Switch $HOSTNAME not supported"
+	fi
+}
+
+################################################################################
+get-digi() {
+	local OUTPUT LINE
+	debug "get-digi: $*"
+
+	#NAME="$(get-name "$HOSTNAME")"
+	#export SSHPASS="${AAA[$NAME]:-}"
+	#OUTPUT="$(set -x; sshpass -e ssh -tt "${SSH[$NAME]:-$NAME}" <<<"2
+	OUTPUT="$(remote-nocheck "2
+
+
+
+9
+y
+")"
+
+	while read -r LINE ; do
+		#info "$LINE"
+		if [[ $LINE =~ ^[0-9]*\  && ! $LINE =~ Port\ Title ]] ; then
+			echo "$LINE"
+		fi
+	done <<<"$OUTPUT"
+
+}
+
+################################################################################
+test-thing() {
+	FILE="/tmp/system.cfg"
+	info "behanw@$HOSTNAME => $FILE"
+	info "Should be TRUE"
+	info "Should be FALSE"
+	# shellcheck disable=SC2029
+	if ssh "behanw@$HOSTNAME" "test -r $FILE" ; then echo TRUE; else echo FALSE; fi
+	info "Should be TRUE"
+	info "Should be FALSE"
+	# shellcheck disable=SC2029
+	if ([[ -z $VERBOSE ]] || set -x; ssh "behanw@$HOSTNAME" "test -r $FILE" 2>/dev/null) ; then echo TRUE; else echo FALSE; fi
+	info "Should be TRUE"
+	if remote-cmd "$VIAHOST" "behanw@$HOSTNAME" "test -e $FILE" ; then echo TRUE; else echo FALSE; fi
+	info "Should be TRUE"
+	if remoteif "$VIAHOST" "$HOSTNAME" "$FILE" ; then echo TRUE; else echo FALSE; fi
+	info "Should be TRUE"
+	if remote-exists "$FILE" ; then echo TRUE; else echo FALSE; fi
+
+	FILE="/tmp/system.cfg1"
+	info "behanw@$HOSTNAME => $FILE"
+	info "Should be FALSE"
+	info "Should be FALSE"
+	# shellcheck disable=SC2029
+	if ssh "behanw@$HOSTNAME" "test -r $FILE" ; then echo TRUE; else echo FALSE; fi
+	info "Should be FALSE"
+	# shellcheck disable=SC2029
+	if ([[ -z $VERBOSE ]] || set -x; ssh "behanw@$HOSTNAME" "test -r $FILE" 2>/dev/null) ; then echo TRUE; else echo FALSE; fi
+	info "Should be FALSE"
+	if remote-cmd "$VIAHOST" "behanw@$HOSTNAME" "test -e $FILE" ; then echo TRUE; else echo FALSE; fi
+	info "Should be FALSE"
+	if remoteif "$VIAHOST" "$HOSTNAME" "$FILE" ; then echo TRUE; else echo FALSE; fi
+	info "Should be FALSE"
+	if remote-exists "$FILE" ; then echo TRUE; else echo FALSE; fi
+}
+
+################################################################################
+usage() {
+	set +x
+	cat <<ENDHELP
+Usage: $(basename "$0") [options] <cmd>
+    -4, --ipv4          Show IPv4 addresses
+    -6, --ipv6          Show IPv6 addresses
+    -c, --cluster NAME  Set the cluster name
+    -d, --device NAME   Attach inventory to this device
+    -e, --export        Export found HW
+    -f, --file NAME     Configuration file
+    -h, --help          This help
+    -m, --mfg NAME      Set the manufacturer name
+    -j, --json          Send found objects to netbox
+    -n, --netbox        Send found objects to netbox
+    -t, --tenant NAME   Set tenant name
+    -v, --verbose       Verbose output
+        --vrf NAME      Set VRF name
+    -V, --version       Version ($VER)
+
+    all                 Output all HW
+    baseboard           Output baseboard information
+    bios                Output BIOS information
+    bmc                 Output BMC/IPMI information
+    chassis             Output chassis information
+    cpu                 Output processor information
+    drive               Output HDD/SSD/NVME information
+    import              Import HW information
+    ip                  Output IPs
+    lsi                 Output LSI HBA information
+    memory              Output memory information
+    power               Output PSU information
+    services            Find and list network services
+    system              Output system information
+    tags                List tags
+    vm                  Output vm information
+    zpool               Output zpool information
+    native              Is it host, kvm or lxc
+    inventory ID NAME   Is something in inventory?
+    neighbors           Get LLDP neighbors
+    proxmox-all CMD     Run CMD on all nodes, kvm and lxc
+    proxmox-kvm CMD     Run CMD on kvm on node
+    proxmox-lxc CMD     Run CMD on lxc on node
+    proxmox-nodes CMD   Run CMD on all nodes
+
+ENDHELP
+	exit 0
+}
+
+######################################################################
+HOSTNAME="$(get-hostname)"
+CONF="/etc/$(basename "$0").conf"
+CONF2=
+if [[ -e $CONF ]] ; then
+	notice "Loading local configuration from $HOSTNAME:$CONF"
+	# shellcheck disable=SC1090
+	source "$CONF"
+fi
+
+################################################################################
+# Option processing
+while [[ $# -gt 0 ]] ; do
+	# shellcheck disable=SC1090
+	case "$1" in
+		--debug) DEBUG=y;;
+		-4|--ipv4) IPOPTS="-4";;
+		-6|--ipv6) IPOPTS="-6";;
+		-c|--cluster) Cluster="$2"; shift;;
+		-d|--device|--hostname) HOSTNAME="$(get-hostname "$2")"; shift;;
+		-e|--export) EXPORT=y; JSON=y;;
+		-f|--file) CONF2="$2"; shift;;
+		-h|--help) usage;;
+		-j|--json|-n|--netbox) JSON=y;;
+		-l|--long) LONG=y;;
+		--nocache) NOCACHE=y;;
+		--only) ONLY=$2; shift;;
+		-r|--remote) REMOTE=y; HOSTNAME="$(get-hostname "$2")"; shift;;
+		--tag) TAGS="$2"; shift;;
+		-t|--tenant) Tenant="$2"; shift;;
+		--test) TEST=y;;
+		--trace) set -x;;
+		--update) UPDATE=y;;
+		-u|--user) USERNAME="$2"; shift;;
+		-v|--verbose) VERBOSE=y;;
+		--via) VIAHOST="$2"; shift;;
+		--vrf) Vrf="$2"; shift;;
+		ver*|-V|--version) echo "$(basename "$0") v$VER"; exit 0;;
+		*) CMDS="${CMDS:-} $1";;
+	esac
+	shift
+done
+
+################################################################################
+if [[ -n $VIAHOST ]] ; then
+	notice "Loading configuration from viahost $VIAHOST:$CONF"
+	# shellcheck disable=SC1090
+	source <(remote-via-cat "$CONF")
+fi
+if [[ -n $REMOTE ]] ; then
+	notice "Loading configuration from remote $HOSTNAME:$CONF"
+	# shellcheck disable=SC1090
+	source <(remote-cat "$CONF")
+fi
+if [[ -e $CONF2 ]] ; then
+	notice "Loading configuration from $HOSTNAME:$CONF"
+	# shellcheck disable=SC1090
+	source "$CONF2"
+fi
+init_vars
+is-native || true
+debug "OS is $(get-os)"
+[[ -z $TAGS ]] || lookup-tag "$TAGS"
+
+################################################################################
+CMDS=${CMDS:-all}
+for CMD in $CMDS ; do
+	# shellcheck disable=SC2086
+	case "$CMD" in
+		import) import-csv "$@";;
+		bios|get-bios) get-bios;;
+		bmc|get-bmc) get-bmc;;
+		system|sys|get-system) get-system;;
+		baseboard|board|get-baseboard) get-baseboard;;
+		chassis|chas|get-chassis) get-chassis;;
+		power|pwr|get-power) get-power;;
+		cpu|processor) get-processor;;
+		memory|get-memory) get-memory;;
+		native) is-native; echo $VIRTUAL;;
+		lsi|get-lsi|sas|pike|get-sas|get-pike) get-lsi;;
+		dr|drive*) get-drives;;
+		zpool) get-zpool;;
+		vm) get-vm;;
+		service) get-services ${CMDS#*service};;
+		ip) get-ips ${CMDS#*ip};;
+		dev*) echo "$HOSTNAME => $(lookup-device-id "$HOSTNAME")";;
+		neighbors) get-neighbors ${CMD#*neighbors};;
+		proxmox-all) proxmox-all ${CMDS#*proxmox-all};;
+		proxmox-kvm) proxmox-kvm ${CMDS#*proxmox-kvm};;
+		proxmox-lxc) proxmox-lxc ${CMDS#*proxmox-lxc};;
+		proxmox-nodes) proxmox-nodes ${CMDS#*proxmox-nodes};;
+		investigate) investigate-devices "$@" ;;
+		digi) get-digi ${CMDS#*digi} ;;
+		switch) get-switch ${CMDS#*switch} ;;
+		info)	get-bios ${CMDS#*info}
+			get-bmc ${CMDS#*info}
+			get-system ${CMDS#*info}
+			get-baseboard ${CMDS#*info}
+			get-chassis ${CMDS#*info}
+			;;
+		in-inventory) in-inventory ${CMDS#*inventory};;
+		inventory)
+			get-power ${CMDS#*inventory}
+			get-processor ${CMDS#*inventory}
+			get-memory ${CMDS#*inventory}
+			get-drives ${CMDS#*inventory}
+			;;
+		storage)
+			get-lsi ${CMDS#*storage}
+			get-drives ${CMDS#*storage}
+			get-zpool ${CMDS#*storage}
+			;;
+		network)
+			get-vm ${CMDS#*network}
+			get-ips ${CMDS#*network}
+			get-services ${CMDS#*network}
+			;;
+		all)	get-bios ${CMDS#*all}
+			get-bmc ${CMDS#*all}
+			get-system ${CMDS#*all}
+			get-baseboard ${CMDS#*all}
+			get-chassis ${CMDS#*all}
+			get-power ${CMDS#*all}
+			get-processor ${CMDS#*all}
+			get-memory ${CMDS#*all}
+			get-lsi ${CMDS#*all}
+			get-drives ${CMDS#*all}
+			get-zpool ${CMDS#*all}
+			get-vm ${CMDS#*all}
+			get-ips ${CMDS#*all}
+			get-services ${CMDS#*all}
+			;;
+		test)	test-thing;;
+		*) usage;;
+	esac
+	shift || break
+done
+
+#if [[ -n $CACHE && $CACHE =~ cache/ && -z $DEBUG ]] ; then
+#	rm -rf "${CACHE:?}/"
+#fi

@@ -1,0 +1,17 @@
+name,slug,manufacturer,napalm_driver,napalm_args,description
+AOS,aos,APC,,,
+Brother,brother,Brother,,,Brother Printer OS
+Debian,debian,,,,
+DellOS,dellos,Dell,dellos10,,
+DigiOS,digios,Digi International,,,
+EOS,eos,Arista,EOS,,
+EdgeOS,edgeos,Ubiquity,VyOS,,
+Embedded Linux,embedded-linux,,,,
+HP-Printer,hp-printer,HP,,,HP Printer OS
+MacOS,macos,Apple,,,
+Promox,promox,,,,
+Unifi,unifi,Ubiquity,,,Unifi devices which use the Unifi controller
+Untangle,untangle,,,,
+WatchOS,watchos,Apple,,,
+iOS,ios,Apple,,,
+iPadOS,ipados,Apple,,,

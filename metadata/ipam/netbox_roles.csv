@@ -1,0 +1,17 @@
+name,slug,weight,description
+Control,control,1000,
+DMZ,dmz,1000,
+Daisy Chain,daisy-chain,1000,
+Database,database,1000,
+Default VLAN,default-vlan,1000,
+Guest Network,guest-network,1000,
+IPv6 Tunnel,ipv6-tunnel,1000,IPv6 Tunnel
+Internal Network,internal-network,1000,
+Internet Exchange,internet-exchange,1000,
+IoT Network,iot-network,1000,
+Management,management,1000,
+Monitoring,monitoring,1000,
+Publicly Routable,publicly-routable,1000,
+Storage Ceph,storage-ceph,1000,
+Storage NFS,storage-nfs,1000,
+Storage iSCSI,storage-iscsi,1000,
